@@ -1,4 +1,4 @@
-const DEV_API_URL = 'http://localhost:3000';
+const DEV_API_URL = 'http://localhost:3000/api/v1';
 const PROD_API_URL = '';
 
 export const ENV = {
