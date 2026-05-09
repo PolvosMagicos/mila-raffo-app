@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { User } from '../../domain/entities/user.entity';
 import type { AuthTokens, LoginCredentials, RegisterCredentials } from '../../domain/entities/auth.entity';
 import { authModule } from '../../di';
+import { extractErrorMessage } from '@/core/network/extract-error';
 
 interface AuthState {
   user: User | null;
@@ -54,8 +55,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       const session = await authModule.loginUseCase.execute(credentials);
       set({ user: session.user, tokens: session.tokens, isAuthenticated: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login failed';
-      set({ error: message });
+      set({ error: extractErrorMessage(err, 'Error al iniciar sesión') });
       throw err;
     } finally {
       set({ isLoading: false });
@@ -68,8 +68,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       const session = await authModule.registerUseCase.execute(credentials);
       set({ user: session.user, tokens: session.tokens, isAuthenticated: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Registration failed';
-      set({ error: message });
+      set({ error: extractErrorMessage(err, 'Error al registrarse') });
       throw err;
     } finally {
       set({ isLoading: false });
