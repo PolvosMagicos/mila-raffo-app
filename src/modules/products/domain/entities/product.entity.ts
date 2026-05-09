@@ -10,14 +10,26 @@ export interface ProductImage {
   alt?: string;
 }
 
+export interface ProductVariant {
+  id: string;
+  sku: string;
+  price: number;
+  stock: number;
+  isAvailable: boolean;
+  image: ProductImage | null;
+}
+
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
   images: ProductImage[];
-  category: ProductCategory;
+  categories: ProductCategory[];
+  category: ProductCategory | null;
   stock: number;
   isActive: boolean;
   slug: string;
+  isCustomizable: boolean;
+  variants: ProductVariant[];
 }
