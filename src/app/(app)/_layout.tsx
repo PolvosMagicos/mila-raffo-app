@@ -11,13 +11,13 @@ export default function AppLayout() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
-  // Guard de respaldo: si alguien llega acá sin auth (ej: deep link directo)
-  if (!isAuthenticated) return <Redirect href="/login" />;
-
   const labelStyle = useMemo(
     () => ({ selected: { color: colors.accent } }),
     [colors.accent],
   );
+
+  // Guard de respaldo: si alguien llega acá sin auth (ej: deep link directo)
+  if (!isAuthenticated) return <Redirect href="/login" />;
 
   return (
     <NativeTabs
