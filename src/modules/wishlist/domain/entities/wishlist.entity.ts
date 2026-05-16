@@ -1,19 +1,18 @@
-export interface CartApiItem {
+export interface WishlistItem {
   id: string;
   productId: string;
   variantId: string;
   productName: string;
   colorName: string | null;
   colorHex: string | null;
-  quantity: number;
-  unitPrice: number;
-  subtotal: number;
+  price: number;
   imageUrl: string | null;
   stockAvailable: number;
+  isAvailable: boolean;
+  addedAt: string;
 }
 
-export interface Cart {
-  items: CartApiItem[];
-  total: number;
-  itemCount: number;
+export interface Wishlist {
+  items: WishlistItem[];
+  count: number;
 }

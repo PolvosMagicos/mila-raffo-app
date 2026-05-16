@@ -1,59 +1,27 @@
 import type { CartRepository } from '../../domain/repositories/cart.repository';
 import type { Cart } from '../../domain/entities/cart.entity';
-import type { CartLocalDataSource } from '../datasources/cart.local.datasource';
-import type { Product } from '@/modules/products/domain/entities/product.entity';
-
-function recalculate(items: Cart['items']): Cart {
-  const subtotal = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
-  return { items, subtotal, total: subtotal };
-}
+import type { CartApiDataSource } from '../datasources/cart.api.datasource';
 
 export class CartRepositoryImpl implements CartRepository {
-  constructor(private readonly local: CartLocalDataSource) {}
+  constructor(private readonly api: CartApiDataSource) {}
 
   getCart(): Promise<Cart> {
-    return this.local.getCart();
+    return this.api.getCart();
   }
 
-  async addItem(productId: string, quantity: number): Promise<Cart> {
-    const cart = await this.local.getCart();
-    const existing = cart.items.find((i) => i.product.id === productId);
-
-    let updatedItems: Cart['items'];
-    if (existing) {
-      updatedItems = cart.items.map((i) =>
-        i.product.id === productId ? { ...i, quantity: i.quantity + quantity } : i,
-      );
-    } else {
-      // Product must be provided by caller with full data; handled in store layer
-      updatedItems = cart.items;
-    }
-
-    const updated = recalculate(updatedItems);
-    await this.local.saveCart(updated);
-    return updated;
+  addItem(variantId: string, quantity: number): Promise<Cart> {
+    return this.api.addItem(variantId, quantity);
   }
 
-  async updateItem(productId: string, quantity: number): Promise<Cart> {
-    const cart = await this.local.getCart();
-    const updatedItems = quantity === 0
-      ? cart.items.filter((i) => i.product.id !== productId)
-      : cart.items.map((i) => i.product.id === productId ? { ...i, quantity } : i);
-
-    const updated = recalculate(updatedItems);
-    await this.local.saveCart(updated);
-    return updated;
+  updateItem(itemId: string, quantity: number): Promise<Cart> {
+    return this.api.updateItem(itemId, quantity);
   }
 
-  async removeItem(productId: string): Promise<Cart> {
-    const cart = await this.local.getCart();
-    const updatedItems = cart.items.filter((i) => i.product.id !== productId);
-    const updated = recalculate(updatedItems);
-    await this.local.saveCart(updated);
-    return updated;
+  async removeItem(itemId: string): Promise<void> {
+    return this.api.removeItem(itemId);
   }
 
-  async clearCart(): Promise<void> {
-    await this.local.clearCart();
+  clearCart(): Promise<void> {
+    return this.api.clearCart();
   }
 }

@@ -4,7 +4,7 @@ import type { Cart } from '../entities/cart.entity';
 export class AddToCartUseCase {
   constructor(private readonly repository: CartRepository) {}
 
-  execute(productId: string, quantity: number): Promise<Cart> {
-    return this.repository.addItem(productId, quantity);
+  execute(variantId: string, quantity: number): Promise<Cart> {
+    return this.repository.addItem(variantId, quantity);
   }
 }

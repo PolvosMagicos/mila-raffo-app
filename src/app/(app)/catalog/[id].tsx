@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -15,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
 import { useCartStore } from '@/modules/cart';
 import { useProductsStore, type ProductVariant } from '@/modules/products';
+import { useWishlistStore } from '@/modules/wishlist';
 
 function formatPrice(value: number): string {
   return new Intl.NumberFormat('es-PE', {
@@ -24,8 +26,10 @@ function formatPrice(value: number): string {
   }).format(value);
 }
 
-function formatCharacteristicValue(value: string, units?: string): string {
-  return units ? `${value} ${units}` : value;
+function formatCharValue(value: string, dataType: string, units?: string): string {
+  if (dataType === 'bool') return value === 'true' ? 'Sí' : 'No';
+  if (units) return `${value} ${units}`;
+  return value;
 }
 
 export default function CatalogProductDetailScreen() {
@@ -40,8 +44,15 @@ export default function CatalogProductDetailScreen() {
   const productError = useProductsStore((s) => s.error);
   const fetchProductById = useProductsStore((s) => s.fetchProductById);
   const clearSelected = useProductsStore((s) => s.clearSelected);
+
   const addItem = useCartStore((s) => s.addItem);
   const isAddingToCart = useCartStore((s) => s.isLoading);
+
+  const wishlist = useWishlistStore((s) => s.wishlist);
+  const addToWishlist = useWishlistStore((s) => s.addToWishlist);
+  const removeFromWishlist = useWishlistStore((s) => s.removeFromWishlist);
+  const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
+  const isWishlistLoading = useWishlistStore((s) => s.isLoading);
 
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
 
@@ -51,11 +62,13 @@ export default function CatalogProductDetailScreen() {
     if (productId) {
       void fetchProductById(productId);
     }
-
+    if (!wishlist) {
+      void fetchWishlist();
+    }
     return () => {
       clearSelected();
     };
-  }, [clearSelected, fetchProductById, productId]);
+  }, [clearSelected, fetchProductById, fetchWishlist, productId, wishlist]);
 
   useEffect(() => {
     setSelectedVariantId(product?.variants[0]?.id ?? null);
@@ -70,11 +83,26 @@ export default function CatalogProductDetailScreen() {
   const displayPrice = selectedVariant?.price && selectedVariant.price > 0 ? selectedVariant.price : product?.price ?? 0;
   const canAddToCart = Boolean(product?.isActive && (selectedVariant ? selectedVariant.isAvailable : true));
 
+  const wishlistItemForVariant = useMemo(
+    () => wishlist?.items.find((i) => i.variantId === (selectedVariant?.id ?? '')),
+    [wishlist, selectedVariant?.id],
+  );
+  const inWishlist = Boolean(wishlistItemForVariant);
+
   const handleAddToCart = useCallback(() => {
-    if (product && canAddToCart) {
-      void addItem(product);
+    if (product && canAddToCart && selectedVariant) {
+      void addItem(selectedVariant.id, 1);
     }
-  }, [addItem, canAddToCart, product]);
+  }, [addItem, canAddToCart, product, selectedVariant]);
+
+  const handleToggleWishlist = useCallback(() => {
+    if (!selectedVariant) return;
+    if (wishlistItemForVariant) {
+      void removeFromWishlist(wishlistItemForVariant.id);
+    } else {
+      void addToWishlist(selectedVariant.id);
+    }
+  }, [addToWishlist, removeFromWishlist, selectedVariant, wishlistItemForVariant]);
 
   const handleRetry = useCallback(() => {
     if (productId) {
@@ -131,9 +159,26 @@ export default function CatalogProductDetailScreen() {
           >
             <Text style={styles.backButtonText}>Volver</Text>
           </Pressable>
-          <Text style={[styles.status, canAddToCart ? styles.statusAvailable : styles.statusUnavailable]}>
-            {canAddToCart ? 'Disponible' : 'No disponible'}
-          </Text>
+
+          <View style={styles.topBarRight}>
+            {selectedVariant ? (
+              <Pressable
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.heartButtonTop, pressed && styles.pressed]}
+                onPress={handleToggleWishlist}
+                disabled={isWishlistLoading}
+              >
+                <Ionicons
+                  name={inWishlist ? 'heart' : 'heart-outline'}
+                  size={22}
+                  color={inWishlist ? colors.accent : colors.foreground}
+                />
+              </Pressable>
+            ) : null}
+            <Text style={[styles.status, canAddToCart ? styles.statusAvailable : styles.statusUnavailable]}>
+              {canAddToCart ? 'Disponible' : 'No disponible'}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.imageFrame}>
@@ -175,6 +220,7 @@ export default function CatalogProductDetailScreen() {
                   variant={variant}
                   selected={variant.id === selectedVariant?.id}
                   styles={styles}
+                  colors={colors}
                   onPress={() => setSelectedVariantId(variant.id)}
                 />
               ))}
@@ -189,7 +235,7 @@ export default function CatalogProductDetailScreen() {
                 <View key={characteristic.id} style={styles.specItem}>
                   <Text style={styles.specLabel}>{characteristic.name}</Text>
                   <Text style={styles.specValue}>
-                    {formatCharacteristicValue(characteristic.value, characteristic.units)}
+                    {formatCharValue(characteristic.value, characteristic.dataType, characteristic.units)}
                   </Text>
                 </View>
               ))}
@@ -199,10 +245,10 @@ export default function CatalogProductDetailScreen() {
 
         <Pressable
           accessibilityRole="button"
-          disabled={!canAddToCart || isAddingToCart}
+          disabled={!canAddToCart || isAddingToCart || !selectedVariant}
           style={({ pressed }) => [
             styles.primaryButton,
-            (!canAddToCart || isAddingToCart) && styles.primaryButtonDisabled,
+            (!canAddToCart || isAddingToCart || !selectedVariant) && styles.primaryButtonDisabled,
             pressed && styles.pressed,
           ]}
           onPress={handleAddToCart}
@@ -239,11 +285,13 @@ function VariantOption({
   variant,
   selected,
   styles,
+  colors,
   onPress,
 }: {
   variant: ProductVariant;
   selected: boolean;
   styles: ReturnType<typeof createStyles>;
+  colors: typeof Colors.light | typeof Colors.dark;
   onPress: () => void;
 }) {
   return (
@@ -257,10 +305,19 @@ function VariantOption({
       onPress={onPress}
     >
       <View style={styles.variantTextBlock}>
-        <Text style={styles.variantName}>{variant.sku}</Text>
+        <View style={styles.variantNameRow}>
+          {variant.color ? (
+            <View style={[styles.colorDot, { backgroundColor: variant.color.hex }]} />
+          ) : null}
+          <Text style={styles.variantName}>
+            {variant.color ? variant.color.name : variant.sku}
+          </Text>
+        </View>
         <Text style={styles.variantAvailability}>{variant.isAvailable ? 'Disponible' : 'No disponible'}</Text>
       </View>
-      <Text style={styles.variantPrice}>{formatPrice(variant.price)}</Text>
+      <Text style={[styles.variantPrice, { color: selected ? colors.accent : colors.foreground }]}>
+        {formatPrice(variant.price)}
+      </Text>
     </Pressable>
   );
 }
@@ -296,6 +353,17 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       fontFamily: FontFamily.bodySemiBold,
       fontSize: FontSize.sm,
       color: colors.foreground,
+    },
+    topBarRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.two,
+    },
+    heartButtonTop: {
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     status: {
       overflow: 'hidden',
@@ -401,6 +469,18 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       flex: 1,
       gap: Spacing.one,
     },
+    variantNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.two,
+    },
+    colorDot: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
     variantName: {
       fontFamily: FontFamily.bodySemiBold,
       fontSize: FontSize.base,
@@ -414,7 +494,6 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
     variantPrice: {
       fontFamily: FontFamily.accentBold,
       fontSize: FontSize.base,
-      color: colors.accent,
     },
     specGrid: {
       flexDirection: 'row',

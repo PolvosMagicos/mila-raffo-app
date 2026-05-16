@@ -1,9 +1,9 @@
-import type { Cart, CartItem } from '../entities/cart.entity';
+import type { Cart } from '../entities/cart.entity';
 
 export interface CartRepository {
   getCart(): Promise<Cart>;
-  addItem(productId: string, quantity: number): Promise<Cart>;
-  updateItem(productId: string, quantity: number): Promise<Cart>;
-  removeItem(productId: string): Promise<Cart>;
+  addItem(variantId: string, quantity: number): Promise<Cart>;
+  updateItem(itemId: string, quantity: number): Promise<Cart>;
+  removeItem(itemId: string): Promise<void>;
   clearCart(): Promise<void>;
 }

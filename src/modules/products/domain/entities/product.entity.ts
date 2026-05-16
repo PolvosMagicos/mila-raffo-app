@@ -17,6 +17,7 @@ export interface ProductVariant {
   stock: number;
   isAvailable: boolean;
   image: ProductImage | null;
+  color?: { name: string; hex: string };
 }
 
 export interface ProductCharacteristic {

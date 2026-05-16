@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -15,8 +16,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
-import { useCartStore } from '@/modules/cart';
 import { useProductsStore, type Product } from '@/modules/products';
+import { useWishlistStore } from '@/modules/wishlist';
 
 const PAGE_SIZE = 12;
 
@@ -40,8 +41,11 @@ export default function CatalogScreen() {
   const error = useProductsStore((s) => s.error);
   const fetchProducts = useProductsStore((s) => s.fetchProducts);
   const clearError = useProductsStore((s) => s.clearError);
-  const addItem = useCartStore((s) => s.addItem);
-  const isAddingToCart = useCartStore((s) => s.isLoading);
+
+  const wishlist = useWishlistStore((s) => s.wishlist);
+  const addToWishlist = useWishlistStore((s) => s.addToWishlist);
+  const removeFromWishlist = useWishlistStore((s) => s.removeFromWishlist);
+  const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
 
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
@@ -66,7 +70,8 @@ export default function CatalogScreen() {
       sortBy: 'createdAt',
       sortOrder: 'DESC',
     });
-  }, [fetchProducts]);
+    void fetchWishlist();
+  }, [fetchProducts, fetchWishlist]);
 
   const handleSubmitSearch = useCallback(() => {
     clearError();
@@ -82,13 +87,6 @@ export default function CatalogScreen() {
     loadProducts('');
   }, [clearError, loadProducts]);
 
-  const handleAddToCart = useCallback(
-    (product: Product) => {
-      void addItem(product);
-    },
-    [addItem],
-  );
-
   const handleOpenProduct = useCallback(
     (product: Product) => {
       router.push(`/catalog/${product.id}` as never);
@@ -96,17 +94,40 @@ export default function CatalogScreen() {
     [router],
   );
 
+  const handleToggleWishlist = useCallback(
+    (product: Product) => {
+      const firstVariant = product.variants[0];
+      if (!firstVariant) return;
+
+      const existingItem = wishlist?.items.find((i) => i.variantId === firstVariant.id);
+      if (existingItem) {
+        void removeFromWishlist(existingItem.id);
+      } else {
+        void addToWishlist(firstVariant.id);
+      }
+    },
+    [wishlist, addToWishlist, removeFromWishlist],
+  );
+
   const renderProduct = useCallback(
-    ({ item }: { item: Product }) => (
-      <ProductCard
-        product={item}
-        disabled={isAddingToCart}
-        onAdd={handleAddToCart}
-        onOpen={handleOpenProduct}
-        styles={styles}
-      />
-    ),
-    [handleAddToCart, handleOpenProduct, isAddingToCart, styles],
+    ({ item }: { item: Product }) => {
+      const firstVariantId = item.variants[0]?.id;
+      const inWishlist = firstVariantId
+        ? (wishlist?.items.some((i) => i.variantId === firstVariantId) ?? false)
+        : false;
+
+      return (
+        <ProductCard
+          product={item}
+          inWishlist={inWishlist}
+          onToggleWishlist={handleToggleWishlist}
+          onOpen={handleOpenProduct}
+          styles={styles}
+          colors={colors}
+        />
+      );
+    },
+    [handleToggleWishlist, handleOpenProduct, wishlist, styles, colors],
   );
 
   return (
@@ -185,19 +206,22 @@ export default function CatalogScreen() {
 
 function ProductCard({
   product,
-  disabled,
-  onAdd,
+  inWishlist,
+  onToggleWishlist,
   onOpen,
   styles,
+  colors,
 }: {
   product: Product;
-  disabled: boolean;
-  onAdd: (product: Product) => void;
+  inWishlist: boolean;
+  onToggleWishlist: (product: Product) => void;
   onOpen: (product: Product) => void;
   styles: ReturnType<typeof createStyles>;
+  colors: typeof Colors.light | typeof Colors.dark;
 }) {
   const image = product.images[0];
   const category = product.category?.name;
+  const hasVariants = product.variants.length > 0;
 
   return (
     <View style={styles.productCard}>
@@ -219,6 +243,21 @@ function ProductCard({
               <Text style={styles.imagePlaceholderText}>MR</Text>
             </View>
           )}
+
+          {hasVariants ? (
+            <Pressable
+              accessibilityRole="button"
+              style={styles.heartButton}
+              onPress={() => onToggleWishlist(product)}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={inWishlist ? 'heart' : 'heart-outline'}
+                size={20}
+                color={inWishlist ? colors.accent : '#ffffff'}
+              />
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.cardBody}>
@@ -227,19 +266,6 @@ function ProductCard({
           <Text style={styles.price}>{formatPrice(product.price)}</Text>
           <Text style={styles.stock}>{product.stock > 0 ? `${product.stock} en stock` : 'Consultar stock'}</Text>
         </View>
-      </Pressable>
-
-      <Pressable
-        accessibilityRole="button"
-        disabled={disabled}
-        style={({ pressed }) => [
-          styles.addButton,
-          disabled && styles.addButtonDisabled,
-          pressed && styles.pressed,
-        ]}
-        onPress={() => onAdd(product)}
-      >
-        <Text style={styles.addButtonText}>Agregar</Text>
       </Pressable>
     </View>
   );
@@ -360,6 +386,17 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       fontSize: FontSize['2xl'],
       color: colors.muted,
     },
+    heartButton: {
+      position: 'absolute',
+      top: Spacing.two,
+      right: Spacing.two,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.35)',
+    },
     cardBody: {
       minHeight: 112,
       gap: Spacing.one,
@@ -387,23 +424,6 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       fontFamily: FontFamily.body,
       fontSize: FontSize.xs,
       color: colors.muted,
-    },
-    addButton: {
-      minHeight: 42,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginHorizontal: Spacing.two,
-      marginBottom: Spacing.two,
-      borderRadius: Radius.sm,
-      backgroundColor: colors.foreground,
-    },
-    addButtonDisabled: {
-      opacity: 0.6,
-    },
-    addButtonText: {
-      fontFamily: FontFamily.bodySemiBold,
-      fontSize: FontSize.sm,
-      color: colors.background,
     },
     emptyState: {
       minHeight: 280,

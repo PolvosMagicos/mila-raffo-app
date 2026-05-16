@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { Cart } from '../../domain/entities/cart.entity';
-import type { Product } from '@/modules/products/domain/entities/product.entity';
 import { cartModule } from '../../di';
 
 interface CartState {
@@ -11,68 +10,79 @@ interface CartState {
 
 interface CartActions {
   loadCart: () => Promise<void>;
-  addItem: (product: Product, quantity?: number) => Promise<void>;
-  updateItem: (productId: string, quantity: number) => Promise<void>;
-  removeItem: (productId: string) => Promise<void>;
+  addItem: (variantId: string, quantity?: number) => Promise<void>;
+  updateItem: (itemId: string, quantity: number) => Promise<void>;
+  removeItem: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
   clearError: () => void;
 }
 
-const EMPTY_CART: Cart = { items: [], subtotal: 0, total: 0 };
+const EMPTY_CART: Cart = { items: [], total: 0, itemCount: 0 };
 
-export const useCartStore = create<CartState & CartActions>((set, get) => ({
+export const useCartStore = create<CartState & CartActions>((set) => ({
   cart: EMPTY_CART,
   isLoading: false,
   error: null,
 
   loadCart: async () => {
-    const cart = await cartModule.cartRepository.getCart();
-    set({ cart });
-  },
-
-  addItem: async (product, quantity = 1) => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
-      const { cart } = get();
-      const existing = cart.items.find((i) => i.product.id === product.id);
-      let updatedItems = existing
-        ? cart.items.map((i) => i.product.id === product.id ? { ...i, quantity: i.quantity + quantity } : i)
-        : [...cart.items, { product, quantity }];
-
-      const subtotal = updatedItems.reduce((s, i) => s + i.product.price * i.quantity, 0);
-      const updated: Cart = { items: updatedItems, subtotal, total: subtotal };
-      await cartModule.cartRepository.updateItem(product.id, existing ? existing.quantity + quantity : quantity);
-      set({ cart: updated });
+      const cart = await cartModule.cartRepository.getCart();
+      set({ cart });
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : 'Error updating cart' });
+      set({ error: err instanceof Error ? err.message : 'Error al cargar el carrito' });
     } finally {
       set({ isLoading: false });
     }
   },
 
-  updateItem: async (productId, quantity) => {
-    set({ isLoading: true });
+  addItem: async (variantId, quantity = 1) => {
+    set({ isLoading: true, error: null });
     try {
-      const cart = await cartModule.cartRepository.updateItem(productId, quantity);
+      const cart = await cartModule.cartRepository.addItem(variantId, quantity);
       set({ cart });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : 'Error al agregar al carrito' });
     } finally {
       set({ isLoading: false });
     }
   },
 
-  removeItem: async (productId) => {
-    set({ isLoading: true });
+  updateItem: async (itemId, quantity) => {
+    set({ isLoading: true, error: null });
     try {
-      const cart = await cartModule.removeFromCartUseCase.execute(productId);
+      const cart = await cartModule.cartRepository.updateItem(itemId, quantity);
       set({ cart });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : 'Error al actualizar el carrito' });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  removeItem: async (itemId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await cartModule.cartRepository.removeItem(itemId);
+      const cart = await cartModule.cartRepository.getCart();
+      set({ cart });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : 'Error al eliminar del carrito' });
     } finally {
       set({ isLoading: false });
     }
   },
 
   clearCart: async () => {
-    await cartModule.cartRepository.clearCart();
-    set({ cart: EMPTY_CART });
+    set({ isLoading: true, error: null });
+    try {
+      await cartModule.cartRepository.clearCart();
+      set({ cart: EMPTY_CART });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : 'Error al vaciar el carrito' });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   clearError: () => set({ error: null }),
@@ -80,5 +90,5 @@ export const useCartStore = create<CartState & CartActions>((set, get) => ({
 
 export const cartStore = {
   getState: () => useCartStore.getState(),
-  getItemCount: () => useCartStore.getState().cart.items.reduce((s, i) => s + i.quantity, 0),
+  getItemCount: () => useCartStore.getState().cart.itemCount,
 };
