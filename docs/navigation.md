@@ -72,10 +72,10 @@ Para pantallas como "detalle de producto", "detalle de pedido", etc., necesitás
 
 1. Crear una subcarpeta:
 ```
-src/app/(app)/product/
+src/app/(app)/catalog/
 ├── _layout.tsx    ← Stack para el subflujo
-├── index.tsx      ← /product (lista)
-└── [id].tsx       ← /product/abc-123 (detalle)
+├── index.tsx      ← /catalog (lista)
+└── [id].tsx       ← /catalog/abc-123 (detalle)
 ```
 
 2. El `_layout.tsx` del subflujo:
@@ -92,7 +92,7 @@ export default function ProductLayout() {
 import { useRouter } from 'expo-router';
 
 const router = useRouter();
-router.push(`/product/${product.id}`);
+router.push(`/catalog/${product.id}`);
 ```
 
 4. Recibir el parámetro en `[id].tsx`:

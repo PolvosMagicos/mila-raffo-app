@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -28,6 +29,7 @@ function formatPrice(value: number): string {
 }
 
 export default function CatalogScreen() {
+  const router = useRouter();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -87,16 +89,24 @@ export default function CatalogScreen() {
     [addItem],
   );
 
+  const handleOpenProduct = useCallback(
+    (product: Product) => {
+      router.push(`/catalog/${product.id}` as never);
+    },
+    [router],
+  );
+
   const renderProduct = useCallback(
     ({ item }: { item: Product }) => (
       <ProductCard
         product={item}
         disabled={isAddingToCart}
         onAdd={handleAddToCart}
+        onOpen={handleOpenProduct}
         styles={styles}
       />
     ),
-    [handleAddToCart, isAddingToCart, styles],
+    [handleAddToCart, handleOpenProduct, isAddingToCart, styles],
   );
 
   return (
@@ -177,11 +187,13 @@ function ProductCard({
   product,
   disabled,
   onAdd,
+  onOpen,
   styles,
 }: {
   product: Product;
   disabled: boolean;
   onAdd: (product: Product) => void;
+  onOpen: (product: Product) => void;
   styles: ReturnType<typeof createStyles>;
 }) {
   const image = product.images[0];
@@ -189,27 +201,33 @@ function ProductCard({
 
   return (
     <View style={styles.productCard}>
-      <View style={styles.imageFrame}>
-        {image ? (
-          <Image
-            source={{ uri: image.url }}
-            style={styles.productImage}
-            contentFit="cover"
-            accessibilityLabel={image.alt ?? product.name}
-          />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.imagePlaceholderText}>MR</Text>
-          </View>
-        )}
-      </View>
+      <Pressable
+        accessibilityRole="button"
+        style={({ pressed }) => pressed && styles.pressed}
+        onPress={() => onOpen(product)}
+      >
+        <View style={styles.imageFrame}>
+          {image ? (
+            <Image
+              source={{ uri: image.url }}
+              style={styles.productImage}
+              contentFit="cover"
+              accessibilityLabel={image.alt ?? product.name}
+            />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Text style={styles.imagePlaceholderText}>MR</Text>
+            </View>
+          )}
+        </View>
 
-      <View style={styles.cardBody}>
-        {category ? <Text style={styles.category}>{category}</Text> : null}
-        <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-        <Text style={styles.price}>{formatPrice(product.price)}</Text>
-        <Text style={styles.stock}>{product.stock > 0 ? `${product.stock} en stock` : 'Consultar stock'}</Text>
-      </View>
+        <View style={styles.cardBody}>
+          {category ? <Text style={styles.category}>{category}</Text> : null}
+          <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+          <Text style={styles.price}>{formatPrice(product.price)}</Text>
+          <Text style={styles.stock}>{product.stock > 0 ? `${product.stock} en stock` : 'Consultar stock'}</Text>
+        </View>
+      </Pressable>
 
       <Pressable
         accessibilityRole="button"

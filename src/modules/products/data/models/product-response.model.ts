@@ -1,4 +1,4 @@
-import type { Product, ProductCategory, ProductImage, ProductVariant } from '../../domain/entities/product.entity';
+import type { Product, ProductCategory, ProductCharacteristic, ProductImage, ProductVariant } from '../../domain/entities/product.entity';
 import type { PaginatedProducts } from '../../domain/repositories/products.repository';
 
 interface ProductImageResponse {
@@ -21,6 +21,14 @@ interface ProductVariantResponse {
   image?: ProductImageResponse | null;
 }
 
+interface ProductCharacteristicResponse {
+  id?: string;
+  name?: string;
+  dataType?: string;
+  units?: string | null;
+  value?: string | number | null;
+}
+
 export interface ProductResponse {
   id: string;
   name: string;
@@ -30,6 +38,7 @@ export interface ProductResponse {
   isCustomizable?: boolean;
   image?: ProductImageResponse | null;
   categories?: ProductCategoryResponse[];
+  characteristics?: ProductCharacteristicResponse[];
   variants?: ProductVariantResponse[];
 }
 
@@ -79,12 +88,29 @@ function mapCategory(category: ProductCategoryResponse): ProductCategory | null 
   };
 }
 
+function mapCharacteristic(characteristic: ProductCharacteristicResponse): ProductCharacteristic | null {
+  if (!characteristic.id || !characteristic.name || characteristic.value === undefined || characteristic.value === null) {
+    return null;
+  }
+
+  return {
+    id: characteristic.id,
+    name: characteristic.name,
+    dataType: characteristic.dataType ?? 'text',
+    units: characteristic.units ?? undefined,
+    value: String(characteristic.value),
+  };
+}
+
 export function mapProductResponse(response: ProductResponse): Product {
   const variants = (response.variants ?? []).map(mapVariant);
   const primaryImage = mapImage(response.image, response.id);
   const variantImages = variants.flatMap((variant) => (variant.image ? [variant.image] : []));
   const images = primaryImage ? [primaryImage, ...variantImages] : variantImages;
   const categories = (response.categories ?? []).map(mapCategory).filter((category): category is ProductCategory => Boolean(category));
+  const characteristics = (response.characteristics ?? [])
+    .map(mapCharacteristic)
+    .filter((characteristic): characteristic is ProductCharacteristic => Boolean(characteristic));
   const stock = variants.reduce((total, variant) => total + variant.stock, 0);
   const price = toNumber(response.basePrice) || variants.find((variant) => variant.price > 0)?.price || 0;
 
@@ -100,6 +126,7 @@ export function mapProductResponse(response: ProductResponse): Product {
     isActive: response.available ?? true,
     slug: response.id,
     isCustomizable: response.isCustomizable ?? false,
+    characteristics,
     variants,
   };
 }

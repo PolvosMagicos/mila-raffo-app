@@ -19,6 +19,14 @@ export interface ProductVariant {
   image: ProductImage | null;
 }
 
+export interface ProductCharacteristic {
+  id: string;
+  name: string;
+  dataType: string;
+  units?: string;
+  value: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -31,5 +39,6 @@ export interface Product {
   isActive: boolean;
   slug: string;
   isCustomizable: boolean;
+  characteristics: ProductCharacteristic[];
   variants: ProductVariant[];
 }
