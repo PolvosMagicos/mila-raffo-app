@@ -110,7 +110,7 @@ export default function CartScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="cart-outline" size={64} color={colors.border} />
             <Text style={styles.emptyTitle}>Tu carrito está vacío</Text>
-            <Text style={styles.emptyText}>Explorá el catálogo y agregá productos.</Text>
+            <Text style={styles.emptyText}>Explora el catálogo y agrega productos.</Text>
             <Pressable
               accessibilityRole="button"
               style={({ pressed }) => [styles.ctaButton, pressed && styles.pressed]}
@@ -368,7 +368,7 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: Radius.sm,
-      backgroundColor: colors.foreground,
+      backgroundColor: colors.accent,
       gap: Spacing.one,
     },
     checkoutButtonDisabled: {
@@ -382,7 +382,7 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
     checkoutButtonSub: {
       fontFamily: FontFamily.body,
       fontSize: FontSize.xs,
-      color: colors.muted,
+      color: 'rgba(255,255,255,0.75)',
     },
     centerState: {
       flex: 1,
@@ -414,7 +414,7 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       paddingHorizontal: Spacing.four,
       justifyContent: 'center',
       borderRadius: Radius.sm,
-      backgroundColor: colors.foreground,
+      backgroundColor: colors.accent,
     },
     ctaButtonText: {
       fontFamily: FontFamily.bodySemiBold,

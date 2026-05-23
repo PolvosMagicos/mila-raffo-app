@@ -2,6 +2,8 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -12,8 +14,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
+import { FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/modules/auth';
+
+const BG = require('../../../assets/images/auth-bg.png');
+const LOGO = require('../../../assets/images/logo-mila.png');
+const ACCENT = '#EC7C43';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -30,7 +36,7 @@ export default function LoginScreen() {
 
   function validate(): boolean {
     if (!email.trim()) { setLocalError('El email es requerido'); return false; }
-    if (!email.includes('@')) { setLocalError('Ingresá un email válido'); return false; }
+    if (!email.includes('@')) { setLocalError('Ingresa un email válido'); return false; }
     if (!password) { setLocalError('La contraseña es requerida'); return false; }
     return true;
   }
@@ -42,127 +48,192 @@ export default function LoginScreen() {
 
     try {
       await login({ email: email.trim().toLowerCase(), password });
-      // (auth)/_layout.tsx detecta isAuthenticated = true y redirige a /home
     } catch {
       // error ya guardado en el store
     }
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <View style={styles.container}>
-          <Text style={styles.title}>Mila Raffo</Text>
-          <Text style={styles.subtitle}>Iniciá sesión</Text>
+    <ImageBackground source={BG} style={styles.bg} resizeMode="cover">
+      {/* Capa oscura sobre la imagen */}
+      <View style={styles.overlay} />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={Colors.light.muted}
-            value={email}
-            onChangeText={(v) => { setLocalError(''); setEmail(v); }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            returnKeyType="next"
-            editable={!isLoading}
-          />
+      <SafeAreaView style={styles.safe}>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.container}>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Contraseña"
-            placeholderTextColor={Colors.light.muted}
-            value={password}
-            onChangeText={(v) => { setLocalError(''); setPassword(v); }}
-            secureTextEntry
-            autoComplete="current-password"
-            returnKeyType="done"
-            onSubmitEditing={handleLogin}
-            editable={!isLoading}
-          />
+            {/* Cabecera de marca */}
+            <View style={styles.header}>
+              <Image source={LOGO} style={styles.logo} resizeMode="contain" />
+              <View style={styles.brandDivider} />
+              <Text style={styles.subtitle}>Inicia sesión</Text>
+            </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+            {/* Formulario */}
+            <View style={styles.form}>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>EMAIL</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="tu@email.com"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  value={email}
+                  onChangeText={(v) => { setLocalError(''); clearError(); setEmail(v); }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  returnKeyType="next"
+                  editable={!isLoading}
+                />
+              </View>
 
-          <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading
-              ? <ActivityIndicator color={Colors.light.background} />
-              : <Text style={styles.buttonText}>Ingresar</Text>
-            }
-          </TouchableOpacity>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>CONTRASEÑA</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="••••••••"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  value={password}
+                  onChangeText={(v) => { setLocalError(''); clearError(); setPassword(v); }}
+                  secureTextEntry
+                  autoComplete="current-password"
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
 
-          <TouchableOpacity
-            onPress={() => router.push('./register' as never)}
-            disabled={isLoading}
-          >
-            <Text style={styles.link}>¿No tenés cuenta? Registrate</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.button, isLoading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.buttonText}>Ingresar</Text>
+              }
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('./register' as never)}
+              disabled={isLoading}
+            >
+              <Text style={styles.link}>
+                ¿No tienes cuenta?{' '}
+                <Text style={styles.linkAccent}>Regístrate</Text>
+              </Text>
+            </TouchableOpacity>
+
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.light.background },
+  bg: { flex: 1 },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10, 8, 6, 0.55)',
+  },
+  safe: { flex: 1 },
   flex: { flex: 1 },
+
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     paddingHorizontal: Spacing.four,
-    gap: Spacing.three,
+    paddingBottom: Spacing.six,
+    gap: Spacing.four,
   },
-  title: {
-    fontFamily: FontFamily.editorialBold,
-    fontSize: FontSize['3xl'],
-    color: Colors.light.foreground,
-    textAlign: 'center',
+
+  // ── Cabecera ──────────────────────────────────────────────────────────────
+  header: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginBottom: Spacing.two,
+  },
+  logo: {
+    width: 280,
+    height: 112,
+  },
+  brandDivider: {
+    width: 36,
+    height: 1.5,
+    backgroundColor: ACCENT,
+    marginVertical: Spacing.one,
   },
   subtitle: {
-    fontFamily: FontFamily.body,
-    fontSize: FontSize.md,
-    color: Colors.light.muted,
-    textAlign: 'center',
-    marginBottom: Spacing.two,
+    fontFamily: FontFamily.bodyMedium,
+    fontSize: FontSize.base,
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.5,
+  },
+
+  // ── Formulario ────────────────────────────────────────────────────────────
+  form: { gap: Spacing.four },
+  inputWrapper: { gap: 6 },
+  inputLabel: {
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: 10,
+    color: ACCENT,
+    letterSpacing: 1.5,
   },
   input: {
     fontFamily: FontFamily.body,
     fontSize: FontSize.base,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: 8,
+    borderColor: 'rgba(255,255,255,0.4)',
+    borderRadius: 10,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 4,
-    color: Colors.light.foreground,
+    color: '#fff',
   },
   error: {
     fontFamily: FontFamily.body,
     fontSize: FontSize.sm,
-    color: '#dc2626',
+    color: '#fca5a5',
+    textAlign: 'center',
+    marginTop: -Spacing.two,
   },
+
+  // ── Botón ─────────────────────────────────────────────────────────────────
   button: {
-    backgroundColor: Colors.light.accent,
-    borderRadius: 8,
-    paddingVertical: Spacing.three,
+    backgroundColor: ACCENT,
+    borderRadius: Radius.full,
+    paddingVertical: Spacing.three + 2,
     alignItems: 'center',
-    marginTop: Spacing.one,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
   },
   buttonDisabled: { opacity: 0.6 },
   buttonText: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: FontSize.base,
-    color: Colors.light.background,
+    color: '#fff',
+    letterSpacing: 1.5,
   },
+
+  // ── Link ──────────────────────────────────────────────────────────────────
   link: {
     fontFamily: FontFamily.body,
     fontSize: FontSize.sm,
-    color: Colors.light.accent,
+    color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
+  },
+  linkAccent: {
+    fontFamily: FontFamily.bodySemiBold,
+    color: ACCENT,
   },
 });

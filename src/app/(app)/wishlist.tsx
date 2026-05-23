@@ -99,7 +99,7 @@ export default function WishlistScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="heart-outline" size={64} color={colors.border} />
             <Text style={styles.emptyTitle}>Tu wishlist está vacía</Text>
-            <Text style={styles.emptyText}>Guardá tus piezas favoritas para comprarlas después.</Text>
+            <Text style={styles.emptyText}>Guarda tus piezas favoritas para comprarlas después.</Text>
             <Pressable
               accessibilityRole="button"
               style={({ pressed }) => [styles.ctaButton, pressed && styles.pressed]}
@@ -242,7 +242,7 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       paddingHorizontal: Spacing.four,
       justifyContent: 'center',
       borderRadius: Radius.sm,
-      backgroundColor: colors.foreground,
+      backgroundColor: colors.accent,
     },
     ctaButtonText: {
       fontFamily: FontFamily.bodySemiBold,

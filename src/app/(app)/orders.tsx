@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
+import { AppHeader } from '@/components/app-header';
 import { useOrdersStore, type Order, type OrderStatus } from '@/modules/orders';
 
 function formatPrice(value: number): string {
@@ -69,6 +70,7 @@ export default function OrdersScreen() {
   if (isLoading && orders.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
+        <AppHeader />
         <View style={styles.centerState}>
           <ActivityIndicator color={colors.accent} />
         </View>
@@ -78,6 +80,7 @@ export default function OrdersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppHeader />
       <FlatList
         data={orders}
         keyExtractor={(item) => item.id}
@@ -91,7 +94,7 @@ export default function OrdersScreen() {
         ListEmptyComponent={(
           <View style={styles.emptyState}>
             <Ionicons name="receipt-outline" size={64} color={colors.border} />
-            <Text style={styles.emptyTitle}>Aún no tenés pedidos</Text>
+            <Text style={styles.emptyTitle}>Aún no tienes pedidos</Text>
             <Text style={styles.emptyText}>Cuando realices una compra, tus pedidos aparecerán aquí.</Text>
             <Pressable
               accessibilityRole="button"
@@ -202,7 +205,7 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       paddingHorizontal: Spacing.four,
       justifyContent: 'center',
       borderRadius: Radius.sm,
-      backgroundColor: colors.foreground,
+      backgroundColor: colors.accent,
     },
     ctaButtonText: {
       fontFamily: FontFamily.bodySemiBold,

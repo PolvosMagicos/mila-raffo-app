@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
+import { AppHeader } from '@/components/app-header';
 import { useProductsStore, type Product } from '@/modules/products';
 import { useWishlistStore } from '@/modules/wishlist';
 
@@ -132,6 +133,7 @@ export default function CatalogScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppHeader />
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -148,7 +150,6 @@ export default function CatalogScreen() {
         )}
         ListHeaderComponent={(
           <View style={styles.header}>
-            <Text style={styles.eyebrow}>Mila Raffo</Text>
             <Text style={styles.title}>Catálogo</Text>
             <Text style={styles.subtitle}>{total ? `${total} productos disponibles` : 'Explora piezas seleccionadas'}</Text>
 
@@ -285,12 +286,6 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       paddingTop: Spacing.two,
       paddingBottom: Spacing.three,
       gap: Spacing.two,
-    },
-    eyebrow: {
-      fontFamily: FontFamily.bodySemiBold,
-      fontSize: FontSize.xs,
-      color: colors.accent,
-      textTransform: 'uppercase',
     },
     title: {
       fontFamily: FontFamily.editorialBold,

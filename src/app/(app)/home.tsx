@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
+import { AppHeader } from '@/components/app-header';
 
 const CATEGORIES = [
   { name: 'Carteras', emoji: '', slug: 'carteras' },
@@ -27,12 +28,8 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppHeader />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.eyebrow}>Bienvenida a</Text>
-          <Text style={styles.brand}>Mila Raffo</Text>
-          <Text style={styles.tagline}>Cuero artesanal con identidad propia</Text>
-        </View>
 
         <Pressable
           accessibilityRole="button"
@@ -54,7 +51,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/catalog' as never)}
         >
           <Text style={styles.secondaryBannerTitle}>Envíos a todo el país</Text>
-          <Text style={styles.secondaryBannerSub}>Comprá con confianza · Envío gratis en pedidos +S/.150</Text>
+          <Text style={styles.secondaryBannerSub}>Compra con confianza · Envío gratis en pedidos +S/.150</Text>
         </Pressable>
 
         <View style={styles.categoriesSection}>
@@ -75,7 +72,6 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerBrand}>Mila Raffo</Text>
           <Text style={styles.footerTagline}>Cuero · Artesanía · Identidad</Text>
         </View>
       </ScrollView>
@@ -93,23 +89,6 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       paddingHorizontal: Spacing.three,
       paddingBottom: Spacing.five,
       gap: Spacing.three,
-    },
-    header: {
-      paddingTop: Spacing.two,
-      gap: Spacing.one,
-    },
-    eyebrow: {
-      fontFamily: FontFamily.bodySemiBold,
-      fontSize: FontSize.xs,
-      color: colors.muted,
-      textTransform: 'uppercase',
-      letterSpacing: 1,
-    },
-    brand: {
-      fontFamily: FontFamily.editorialBold,
-      fontSize: FontSize['4xl'],
-      color: colors.foreground,
-      lineHeight: FontSize['4xl'] * 1.05,
     },
     tagline: {
       fontFamily: FontFamily.body,
@@ -211,10 +190,9 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       paddingTop: Spacing.two,
       gap: Spacing.one,
     },
-    footerBrand: {
-      fontFamily: FontFamily.editorialBold,
-      fontSize: FontSize.xl,
-      color: colors.foreground,
+    footerLogo: {
+      width: 120,
+      height: 48,
     },
     footerTagline: {
       fontFamily: FontFamily.body,

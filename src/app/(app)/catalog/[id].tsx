@@ -45,7 +45,11 @@ export default function CatalogProductDetailScreen() {
   const fetchProductById = useProductsStore((s) => s.fetchProductById);
   const clearSelected = useProductsStore((s) => s.clearSelected);
 
+  const cartItems = useCartStore((s) => s.cart.items);
+  const loadCart = useCartStore((s) => s.loadCart);
   const addItem = useCartStore((s) => s.addItem);
+  const updateItem = useCartStore((s) => s.updateItem);
+  const removeItem = useCartStore((s) => s.removeItem);
   const isAddingToCart = useCartStore((s) => s.isLoading);
 
   const wishlist = useWishlistStore((s) => s.wishlist);
@@ -65,10 +69,11 @@ export default function CatalogProductDetailScreen() {
     if (!wishlist) {
       void fetchWishlist();
     }
+    void loadCart();
     return () => {
       clearSelected();
     };
-  }, [clearSelected, fetchProductById, fetchWishlist, productId, wishlist]);
+  }, [clearSelected, fetchProductById, fetchWishlist, loadCart, productId, wishlist]);
 
   useEffect(() => {
     setSelectedVariantId(product?.variants[0]?.id ?? null);
@@ -89,11 +94,32 @@ export default function CatalogProductDetailScreen() {
   );
   const inWishlist = Boolean(wishlistItemForVariant);
 
+  const cartItemForVariant = useMemo(
+    () => selectedVariantId ? cartItems.find((i) => i.variantId === selectedVariantId) ?? null : null,
+    [cartItems, selectedVariantId],
+  );
+
   const handleAddToCart = useCallback(() => {
     if (product && canAddToCart && selectedVariant) {
       void addItem(selectedVariant.id, 1);
     }
   }, [addItem, canAddToCart, product, selectedVariant]);
+
+  const handleIncrement = useCallback(() => {
+    if (!cartItemForVariant) return;
+    if (cartItemForVariant.quantity < cartItemForVariant.stockAvailable) {
+      void updateItem(cartItemForVariant.id, cartItemForVariant.quantity + 1);
+    }
+  }, [cartItemForVariant, updateItem]);
+
+  const handleDecrement = useCallback(() => {
+    if (!cartItemForVariant) return;
+    if (cartItemForVariant.quantity <= 1) {
+      void removeItem(cartItemForVariant.id);
+    } else {
+      void updateItem(cartItemForVariant.id, cartItemForVariant.quantity - 1);
+    }
+  }, [cartItemForVariant, removeItem, updateItem]);
 
   const handleToggleWishlist = useCallback(() => {
     if (!selectedVariant) return;
@@ -243,22 +269,71 @@ export default function CatalogProductDetailScreen() {
           </Section>
         ) : null}
 
-        <Pressable
-          accessibilityRole="button"
-          disabled={!canAddToCart || isAddingToCart || !selectedVariant}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            (!canAddToCart || isAddingToCart || !selectedVariant) && styles.primaryButtonDisabled,
-            pressed && styles.pressed,
-          ]}
-          onPress={handleAddToCart}
-        >
-          {isAddingToCart ? (
-            <ActivityIndicator color={colors.background} />
-          ) : (
-            <Text style={styles.primaryButtonText}>Agregar al carrito</Text>
-          )}
-        </Pressable>
+        {cartItemForVariant ? (
+          <View style={styles.cartControls}>
+            <View style={styles.inCartRow}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+              <Text style={styles.inCartLabel}>En tu carrito</Text>
+            </View>
+            <View style={styles.stepper}>
+              <Pressable
+                accessibilityRole="button"
+                style={styles.stepperBtn}
+                onPress={handleDecrement}
+                disabled={isAddingToCart}
+              >
+                <Ionicons
+                  name={cartItemForVariant.quantity <= 1 ? 'trash-outline' : 'remove'}
+                  size={20}
+                  color={colors.foreground}
+                />
+              </Pressable>
+              <View style={styles.stepperDivider} />
+              {isAddingToCart ? (
+                <ActivityIndicator style={styles.stepperCount} color={colors.accent} size="small" />
+              ) : (
+                <Text style={styles.stepperCount}>{cartItemForVariant.quantity}</Text>
+              )}
+              <View style={styles.stepperDivider} />
+              <Pressable
+                accessibilityRole="button"
+                style={styles.stepperBtn}
+                onPress={handleIncrement}
+                disabled={isAddingToCart || cartItemForVariant.quantity >= cartItemForVariant.stockAvailable}
+              >
+                <Ionicons
+                  name="add"
+                  size={20}
+                  color={cartItemForVariant.quantity >= cartItemForVariant.stockAvailable ? colors.muted : colors.foreground}
+                />
+              </Pressable>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.goToCartButton, pressed && styles.pressed]}
+              onPress={() => router.push('/cart' as never)}
+            >
+              <Text style={styles.goToCartText}>Ver carrito →</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            disabled={!canAddToCart || isAddingToCart || !selectedVariant}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              (!canAddToCart || isAddingToCart || !selectedVariant) && styles.primaryButtonDisabled,
+              pressed && styles.pressed,
+            ]}
+            onPress={handleAddToCart}
+          >
+            {isAddingToCart ? (
+              <ActivityIndicator color={colors.background} />
+            ) : (
+              <Text style={styles.primaryButtonText}>Agregar al carrito</Text>
+            )}
+          </Pressable>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -521,13 +596,63 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       fontSize: FontSize.lg,
       color: colors.foreground,
     },
+    cartControls: {
+      gap: Spacing.two,
+    },
+    inCartRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.one,
+    },
+    inCartLabel: {
+      fontFamily: FontFamily.bodySemiBold,
+      fontSize: FontSize.sm,
+      color: colors.accent,
+    },
+    stepper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderColor: colors.accent,
+      borderRadius: Radius.sm,
+      overflow: 'hidden',
+      minHeight: 52,
+    },
+    stepperBtn: {
+      width: 56,
+      minHeight: 52,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepperDivider: {
+      width: 1,
+      height: 28,
+      backgroundColor: colors.border,
+    },
+    stepperCount: {
+      flex: 1,
+      fontFamily: FontFamily.bodySemiBold,
+      fontSize: FontSize.xl,
+      color: colors.foreground,
+      textAlign: 'center',
+    },
+    goToCartButton: {
+      minHeight: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    goToCartText: {
+      fontFamily: FontFamily.bodySemiBold,
+      fontSize: FontSize.sm,
+      color: colors.accent,
+    },
     primaryButton: {
       minHeight: 52,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: Radius.sm,
       paddingHorizontal: Spacing.three,
-      backgroundColor: colors.foreground,
+      backgroundColor: colors.accent,
     },
     primaryButtonDisabled: {
       opacity: 0.55,
