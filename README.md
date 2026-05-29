@@ -1,56 +1,47 @@
-# Welcome to your Expo app 👋
+# Mila Raffo App Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicacion mobile Expo / React Native para el ecommerce de Mila Raffo. La app consume el backend NestJS, organiza el codigo por modulos de negocio y usa Expo Router para separar auth, tabs principales y subflujos como catalogo.
 
-## Get started
+## Stack
 
-1. Install dependencies
+- Expo 55
+- React Native 0.83
+- React 19
+- Expo Router 55
+- Zustand 5
+- Axios
+- TypeScript strict
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Primeros pasos
 
 ```bash
-npm run reset-project
+npm install
+npm run start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Comandos utiles:
 
-### Other setup steps
+```bash
+npm run android
+npm run ios
+npm run web
+npm run lint
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+La URL del backend se configura en `src/core/config/env.ts`. En desarrollo apunta a:
 
-## Learn more
+```text
+http://localhost:3000/api/v1
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Documentacion
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+La documentacion principal esta en [docs/app/00-index.md](./docs/app/00-index.md), siguiendo la misma estructura numerada usada por el backend.
 
-## Join the community
+Guias puntuales existentes:
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [Arquitectura](./docs/architecture.md)
+- [Convenciones](./docs/conventions.md)
+- [Modulos](./docs/modules.md)
+- [Navegacion](./docs/navigation.md)
+- [Tema](./docs/theme.md)
