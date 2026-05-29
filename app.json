@@ -4,7 +4,7 @@
     "slug": "mila-raffo-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo-mila.png",
     "scheme": "milaraffoapp",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -30,7 +30,7 @@
         {
           "backgroundColor": "#208AEF",
           "android": {
-            "image": "./assets/images/splash-icon.png",
+            "image": "./assets/images/logo-mila.png",
             "imageWidth": 76
           }
         }

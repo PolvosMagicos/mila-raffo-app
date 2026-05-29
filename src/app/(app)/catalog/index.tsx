@@ -1,12 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -17,10 +20,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
 import { AppHeader } from '@/components/app-header';
-import { useProductsStore, type Product } from '@/modules/products';
+import { useProductsStore, type Product, type ProductCategory } from '@/modules/products';
 import { useWishlistStore } from '@/modules/wishlist';
 
 const PAGE_SIZE = 12;
+const FILTERS_PANEL_MAX_HEIGHT = 560;
+
+type AvailabilityFilter = 'available' | 'unavailable' | 'all';
+type SortOption = 'newest' | 'priceAsc' | 'priceDesc' | 'nameAsc';
+
+const AVAILABILITY_OPTIONS: { label: string; value: AvailabilityFilter }[] = [
+  { label: 'Disponibles', value: 'available' },
+  { label: 'Agotados', value: 'unavailable' },
+  { label: 'Todos', value: 'all' },
+];
+
+const SORT_OPTIONS: { label: string; value: SortOption }[] = [
+  { label: 'Recientes', value: 'newest' },
+  { label: 'Menor precio', value: 'priceAsc' },
+  { label: 'Mayor precio', value: 'priceDesc' },
+  { label: 'Nombre A-Z', value: 'nameAsc' },
+];
 
 function formatPrice(value: number): string {
   return new Intl.NumberFormat('es-PE', {
@@ -28,6 +48,18 @@ function formatPrice(value: number): string {
     currency: 'PEN',
     minimumFractionDigits: 2,
   }).format(value);
+}
+
+function parsePriceFilter(value: string): number | undefined {
+  const parsed = Number(value.replace(',', '.'));
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
+function resolveSort(option: SortOption): { sortBy: 'name' | 'basePrice' | 'createdAt'; sortOrder: 'ASC' | 'DESC' } {
+  if (option === 'priceAsc') return { sortBy: 'basePrice', sortOrder: 'ASC' };
+  if (option === 'priceDesc') return { sortBy: 'basePrice', sortOrder: 'DESC' };
+  if (option === 'nameAsc') return { sortBy: 'name', sortOrder: 'ASC' };
+  return { sortBy: 'createdAt', sortOrder: 'DESC' };
 }
 
 export default function CatalogScreen() {
@@ -50,43 +82,112 @@ export default function CatalogScreen() {
 
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-
-  const loadProducts = useCallback(
-    (query = appliedSearch) => fetchProducts({
-      search: query.trim() || undefined,
-      page: 1,
-      limit: PAGE_SIZE,
-      available: true,
-      sortBy: 'createdAt',
-      sortOrder: 'DESC',
-    }),
-    [appliedSearch, fetchProducts],
-  );
+  const [categoryOptions, setCategoryOptions] = useState<ProductCategory[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>();
+  const [availability, setAvailability] = useState<AvailabilityFilter>('available');
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [appliedMinPrice, setAppliedMinPrice] = useState<number | undefined>();
+  const [appliedMaxPrice, setAppliedMaxPrice] = useState<number | undefined>();
+  const [filtersVisible, setFiltersVisible] = useState(false);
+  const filtersAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    void fetchProducts({
+    Animated.timing(filtersAnimation, {
+      toValue: filtersVisible ? 1 : 0,
+      duration: 360,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [filtersAnimation, filtersVisible]);
+
+  const animatedFiltersStyle = useMemo(() => ({
+    maxHeight: filtersAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, FILTERS_PANEL_MAX_HEIGHT],
+    }),
+    opacity: filtersAnimation,
+    transform: [{
+      translateY: filtersAnimation.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-8, 0],
+      }),
+    }],
+  }), [filtersAnimation]);
+
+  const productFilters = useMemo(() => {
+    const sort = resolveSort(sortOption);
+
+    return {
+      q: appliedSearch.trim() || undefined,
       page: 1,
       limit: PAGE_SIZE,
-      available: true,
-      sortBy: 'createdAt',
-      sortOrder: 'DESC',
-    });
+      categoryId: selectedCategoryId,
+      available: availability === 'all' ? undefined : availability === 'available',
+      minBasePrice: appliedMinPrice,
+      maxBasePrice: appliedMaxPrice,
+      sortBy: sort.sortBy,
+      sortOrder: sort.sortOrder,
+    };
+  }, [appliedMaxPrice, appliedMinPrice, appliedSearch, availability, selectedCategoryId, sortOption]);
+
+  const loadProducts = useCallback(() => fetchProducts(productFilters), [fetchProducts, productFilters]);
+
+  useEffect(() => {
+    void fetchProducts(productFilters);
+  }, [fetchProducts, productFilters]);
+
+  useEffect(() => {
     void fetchWishlist();
-  }, [fetchProducts, fetchWishlist]);
+  }, [fetchWishlist]);
+
+  useEffect(() => {
+    const nextCategories = items.flatMap((product) => product.categories);
+
+    if (!nextCategories.length) return;
+
+    setCategoryOptions((current) => {
+      const categoriesById = new Map(current.map((category) => [category.id, category]));
+
+      nextCategories.forEach((category) => {
+        categoriesById.set(category.id, category);
+      });
+
+      return categoriesById.size === current.length ? current : Array.from(categoriesById.values());
+    });
+  }, [items]);
 
   const handleSubmitSearch = useCallback(() => {
     clearError();
     const query = search.trim();
     setAppliedSearch(query);
-    loadProducts(query);
-  }, [clearError, loadProducts, search]);
+  }, [clearError, search]);
 
   const handleClearSearch = useCallback(() => {
     setSearch('');
     setAppliedSearch('');
     clearError();
-    loadProducts('');
-  }, [clearError, loadProducts]);
+  }, [clearError]);
+
+  const handleApplyPriceFilters = useCallback(() => {
+    clearError();
+    setAppliedMinPrice(parsePriceFilter(minPrice));
+    setAppliedMaxPrice(parsePriceFilter(maxPrice));
+  }, [clearError, maxPrice, minPrice]);
+
+  const handleClearFilters = useCallback(() => {
+    clearError();
+    setSearch('');
+    setAppliedSearch('');
+    setSelectedCategoryId(undefined);
+    setAvailability('available');
+    setSortOption('newest');
+    setMinPrice('');
+    setMaxPrice('');
+    setAppliedMinPrice(undefined);
+    setAppliedMaxPrice(undefined);
+  }, [clearError]);
 
   const handleOpenProduct = useCallback(
     (product: Product) => {
@@ -145,7 +246,7 @@ export default function CatalogScreen() {
           <RefreshControl
             refreshing={isLoading}
             tintColor={colors.accent}
-            onRefresh={() => loadProducts()}
+            onRefresh={loadProducts}
           />
         )}
         ListHeaderComponent={(
@@ -178,10 +279,164 @@ export default function CatalogScreen() {
               </Pressable>
             ) : null}
 
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: filtersVisible }}
+              style={({ pressed }) => [styles.filtersToggle, pressed && styles.pressed]}
+              onPress={() => setFiltersVisible((visible) => !visible)}
+            >
+              <View style={styles.filtersToggleContent}>
+                <Ionicons name="options-outline" size={18} color={colors.foreground} />
+                <Text style={styles.filtersToggleText}>Filtros</Text>
+              </View>
+              <Ionicons name={filtersVisible ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} />
+            </Pressable>
+
+            <Animated.View
+              importantForAccessibility={filtersVisible ? 'auto' : 'no-hide-descendants'}
+              pointerEvents={filtersVisible ? 'auto' : 'none'}
+              style={[styles.filtersPanel, animatedFiltersStyle]}
+            >
+              <View style={styles.filters}>
+                <Text style={styles.filterLabel}>Ordenar</Text>
+                <View style={styles.chipRow}>
+                  {SORT_OPTIONS.map((option) => {
+                    const isSelected = sortOption === option.value;
+
+                    return (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="button"
+                        style={({ pressed }) => [
+                          styles.filterChip,
+                          isSelected && styles.filterChipActive,
+                          pressed && styles.pressed,
+                        ]}
+                        onPress={() => {
+                          clearError();
+                          setSortOption(option.value);
+                        }}
+                      >
+                        <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <Text style={styles.filterLabel}>Disponibilidad</Text>
+                <View style={styles.chipRow}>
+                  {AVAILABILITY_OPTIONS.map((option) => {
+                    const isSelected = availability === option.value;
+
+                    return (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="button"
+                        style={({ pressed }) => [
+                          styles.filterChip,
+                          isSelected && styles.filterChipActive,
+                          pressed && styles.pressed,
+                        ]}
+                        onPress={() => {
+                          clearError();
+                          setAvailability(option.value);
+                        }}
+                      >
+                        <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {categoryOptions.length ? (
+                  <>
+                    <Text style={styles.filterLabel}>Categoría</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalChips}>
+                      <Pressable
+                        accessibilityRole="button"
+                        style={({ pressed }) => [
+                          styles.filterChip,
+                          !selectedCategoryId && styles.filterChipActive,
+                          pressed && styles.pressed,
+                        ]}
+                        onPress={() => {
+                          clearError();
+                          setSelectedCategoryId(undefined);
+                        }}
+                      >
+                        <Text style={[styles.filterChipText, !selectedCategoryId && styles.filterChipTextActive]}>
+                          Todas
+                        </Text>
+                      </Pressable>
+
+                      {categoryOptions.map((category) => {
+                        const isSelected = selectedCategoryId === category.id;
+
+                        return (
+                          <Pressable
+                            key={category.id}
+                            accessibilityRole="button"
+                            style={({ pressed }) => [
+                              styles.filterChip,
+                              isSelected && styles.filterChipActive,
+                              pressed && styles.pressed,
+                            ]}
+                            onPress={() => {
+                              clearError();
+                              setSelectedCategoryId(category.id);
+                            }}
+                          >
+                            <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                              {category.name}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  </>
+                ) : null}
+
+                <Text style={styles.filterLabel}>Precio base</Text>
+                <View style={styles.priceRow}>
+                  <TextInput
+                    value={minPrice}
+                    onChangeText={setMinPrice}
+                    placeholder="Min"
+                    placeholderTextColor={colors.muted}
+                    keyboardType="decimal-pad"
+                    style={styles.priceInput}
+                  />
+                  <TextInput
+                    value={maxPrice}
+                    onChangeText={setMaxPrice}
+                    placeholder="Max"
+                    placeholderTextColor={colors.muted}
+                    keyboardType="decimal-pad"
+                    style={styles.priceInput}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed }) => [styles.applyButton, pressed && styles.pressed]}
+                    onPress={handleApplyPriceFilters}
+                  >
+                    <Ionicons name="checkmark" size={18} color="#ffffff" />
+                  </Pressable>
+                </View>
+
+                <Pressable accessibilityRole="button" onPress={handleClearFilters}>
+                  <Text style={styles.clearSearch}>Limpiar filtros</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+
             {error ? (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>{error}</Text>
-                <Pressable accessibilityRole="button" onPress={() => loadProducts()}>
+                <Pressable accessibilityRole="button" onPress={loadProducts}>
                   <Text style={styles.retryText}>Reintentar</Text>
                 </Pressable>
               </View>
@@ -331,6 +586,94 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       fontFamily: FontFamily.bodySemiBold,
       fontSize: FontSize.sm,
       color: colors.accent,
+    },
+    filtersToggle: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.three,
+      backgroundColor: colors.background,
+    },
+    filtersToggleContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.two,
+    },
+    filtersToggleText: {
+      fontFamily: FontFamily.bodySemiBold,
+      fontSize: FontSize.sm,
+      color: colors.foreground,
+    },
+    filtersPanel: {
+      overflow: 'hidden',
+    },
+    filters: {
+      gap: Spacing.two,
+      paddingTop: Spacing.one,
+    },
+    filterLabel: {
+      fontFamily: FontFamily.bodySemiBold,
+      fontSize: FontSize.xs,
+      color: colors.muted,
+      textTransform: 'uppercase',
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.two,
+    },
+    horizontalChips: {
+      gap: Spacing.two,
+      paddingRight: Spacing.three,
+    },
+    filterChip: {
+      minHeight: 36,
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.three,
+      backgroundColor: colors.background,
+    },
+    filterChipActive: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accent,
+    },
+    filterChipText: {
+      fontFamily: FontFamily.bodySemiBold,
+      fontSize: FontSize.sm,
+      color: colors.foreground,
+    },
+    filterChipTextActive: {
+      color: '#ffffff',
+    },
+    priceRow: {
+      flexDirection: 'row',
+      gap: Spacing.two,
+    },
+    priceInput: {
+      flex: 1,
+      minHeight: 44,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.three,
+      fontFamily: FontFamily.body,
+      fontSize: FontSize.base,
+      color: colors.foreground,
+      backgroundColor: colors.background,
+    },
+    applyButton: {
+      width: 44,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: Radius.sm,
+      backgroundColor: colors.accent,
     },
     errorBox: {
       gap: Spacing.one,

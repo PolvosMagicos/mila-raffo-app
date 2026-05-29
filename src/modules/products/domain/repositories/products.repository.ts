@@ -2,11 +2,15 @@ import type { Product } from '../entities/product.entity';
 
 export interface ProductsFilters {
   categoryId?: string;
+  q?: string;
+  name?: string;
   search?: string;
   page?: number;
   offset?: number;
   limit?: number;
   available?: boolean;
+  minBasePrice?: number;
+  maxBasePrice?: number;
   sortBy?: 'name' | 'basePrice' | 'createdAt' | 'updatedAt';
   sortOrder?: 'ASC' | 'DESC';
 }
