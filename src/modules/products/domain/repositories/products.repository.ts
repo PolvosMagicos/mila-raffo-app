@@ -2,6 +2,7 @@ import type { Product } from '../entities/product.entity';
 
 export interface ProductsFilters {
   categoryId?: string;
+  colorIds?: string[];
   q?: string;
   name?: string;
   search?: string;

@@ -24,7 +24,7 @@ import { useProductsStore, type Product, type ProductCategory } from '@/modules/
 import { useWishlistStore } from '@/modules/wishlist';
 
 const PAGE_SIZE = 12;
-const FILTERS_PANEL_MAX_HEIGHT = 560;
+const FILTERS_PANEL_MAX_HEIGHT = 700;
 
 type AvailabilityFilter = 'available' | 'unavailable' | 'all';
 type SortOption = 'newest' | 'priceAsc' | 'priceDesc' | 'nameAsc';
@@ -51,6 +51,7 @@ function formatPrice(value: number): string {
 }
 
 function parsePriceFilter(value: string): number | undefined {
+  if (!value.trim()) return undefined;
   const parsed = Number(value.replace(',', '.'));
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
@@ -71,8 +72,11 @@ export default function CatalogScreen() {
   const items = useProductsStore((s) => s.items);
   const total = useProductsStore((s) => s.total);
   const isLoading = useProductsStore((s) => s.isLoading);
+  const isLoadingMore = useProductsStore((s) => s.isLoadingMore);
+  const hasMore = useProductsStore((s) => s.hasMore);
   const error = useProductsStore((s) => s.error);
   const fetchProducts = useProductsStore((s) => s.fetchProducts);
+  const loadMoreProducts = useProductsStore((s) => s.loadMoreProducts);
   const clearError = useProductsStore((s) => s.clearError);
 
   const wishlist = useWishlistStore((s) => s.wishlist);
@@ -90,6 +94,8 @@ export default function CatalogScreen() {
   const [maxPrice, setMaxPrice] = useState('');
   const [appliedMinPrice, setAppliedMinPrice] = useState<number | undefined>();
   const [appliedMaxPrice, setAppliedMaxPrice] = useState<number | undefined>();
+  const [selectedColorIds, setSelectedColorIds] = useState<string[]>([]);
+  const [colorOptions, setColorOptions] = useState<{ id: string; hex: string; name: string }[]>([]);
   const [filtersVisible, setFiltersVisible] = useState(false);
   const filtersAnimation = useRef(new Animated.Value(0)).current;
 
@@ -121,16 +127,16 @@ export default function CatalogScreen() {
 
     return {
       q: appliedSearch.trim() || undefined,
-      page: 1,
       limit: PAGE_SIZE,
       categoryId: selectedCategoryId,
+      colorIds: selectedColorIds.length ? selectedColorIds : undefined,
       available: availability === 'all' ? undefined : availability === 'available',
       minBasePrice: appliedMinPrice,
       maxBasePrice: appliedMaxPrice,
       sortBy: sort.sortBy,
       sortOrder: sort.sortOrder,
     };
-  }, [appliedMaxPrice, appliedMinPrice, appliedSearch, availability, selectedCategoryId, sortOption]);
+  }, [appliedMaxPrice, appliedMinPrice, appliedSearch, availability, selectedCategoryId, selectedColorIds, sortOption]);
 
   const loadProducts = useCallback(() => fetchProducts(productFilters), [fetchProducts, productFilters]);
 
@@ -155,6 +161,20 @@ export default function CatalogScreen() {
       });
 
       return categoriesById.size === current.length ? current : Array.from(categoriesById.values());
+    });
+  }, [items]);
+
+  useEffect(() => {
+    const nextColors = items.flatMap((p) =>
+      p.variants.flatMap((v) =>
+        v.color ? [{ id: v.color.id, hex: v.color.hex, name: v.color.name }] : [],
+      ),
+    );
+    if (!nextColors.length) return;
+    setColorOptions((current) => {
+      const map = new Map(current.map((c) => [c.id, c]));
+      nextColors.forEach((c) => map.set(c.id, c));
+      return map.size === current.length ? current : Array.from(map.values());
     });
   }, [items]);
 
@@ -187,7 +207,14 @@ export default function CatalogScreen() {
     setMaxPrice('');
     setAppliedMinPrice(undefined);
     setAppliedMaxPrice(undefined);
+    setSelectedColorIds([]);
   }, [clearError]);
+
+  const handleToggleColor = useCallback((id: string) => {
+    setSelectedColorIds((prev) =>
+      prev.includes(id) ? prev.filter((h) => h !== id) : [...prev, id],
+    );
+  }, []);
 
   const handleOpenProduct = useCallback(
     (product: Product) => {
@@ -211,6 +238,12 @@ export default function CatalogScreen() {
     [wishlist, addToWishlist, removeFromWishlist],
   );
 
+  const handleEndReached = useCallback(() => {
+    if (hasMore && !isLoadingMore) {
+      void loadMoreProducts(productFilters);
+    }
+  }, [hasMore, isLoadingMore, loadMoreProducts, productFilters]);
+
   const renderProduct = useCallback(
     ({ item }: { item: Product }) => {
       const firstVariantId = item.variants[0]?.id;
@@ -232,6 +265,15 @@ export default function CatalogScreen() {
     [handleToggleWishlist, handleOpenProduct, wishlist, styles, colors],
   );
 
+  const listFooter = useMemo(() => {
+    if (!isLoadingMore) return null;
+    return (
+      <View style={styles.loadingMore}>
+        <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }, [isLoadingMore, colors.accent, styles.loadingMore]);
+
   return (
     <SafeAreaView style={styles.container}>
       <AppHeader />
@@ -242,6 +284,9 @@ export default function CatalogScreen() {
         renderItem={renderProduct}
         columnWrapperStyle={styles.productRow}
         contentContainerStyle={styles.listContent}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={listFooter}
         refreshControl={(
           <RefreshControl
             refreshing={isLoading}
@@ -400,6 +445,33 @@ export default function CatalogScreen() {
                   </>
                 ) : null}
 
+                {colorOptions.length ? (
+                  <>
+                    <Text style={styles.filterLabel}>Color</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalChips}>
+                      {colorOptions.map((color) => {
+                        const isSelected = selectedColorIds.includes(color.id);
+
+                        return (
+                          <Pressable
+                            key={color.id}
+                            accessibilityRole="button"
+                            accessibilityLabel={color.name}
+                            accessibilityState={{ selected: isSelected }}
+                            style={({ pressed }) => [
+                              styles.colorSwatch,
+                              { backgroundColor: color.hex },
+                              isSelected && styles.colorSwatchSelected,
+                              pressed && styles.pressed,
+                            ]}
+                            onPress={() => handleToggleColor(color.id)}
+                          />
+                        );
+                      })}
+                    </ScrollView>
+                  </>
+                ) : null}
+
                 <Text style={styles.filterLabel}>Precio base</Text>
                 <View style={styles.priceRow}>
                   <TextInput
@@ -447,6 +519,17 @@ export default function CatalogScreen() {
           <View style={styles.emptyState}>
             {isLoading ? (
               <ActivityIndicator color={colors.accent} />
+            ) : selectedColorIds.length > 0 ? (
+              <>
+                <Text style={styles.emptyTitle}>Sin resultados</Text>
+                <Text style={styles.emptyText}>Ningún producto tiene variantes en el color seleccionado.</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setSelectedColorIds([])}
+                >
+                  <Text style={styles.clearSearch}>Limpiar filtro de color</Text>
+                </Pressable>
+              </>
             ) : (
               <>
                 <Text style={styles.emptyTitle}>No hay productos</Text>
@@ -651,6 +734,17 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
     filterChipTextActive: {
       color: '#ffffff',
     },
+    colorSwatch: {
+      width: 32,
+      height: 32,
+      borderRadius: Radius.sm,
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    colorSwatchSelected: {
+      borderColor: colors.accent,
+      borderWidth: 3,
+    },
     priceRow: {
       flexDirection: 'row',
       gap: Spacing.two,
@@ -762,6 +856,10 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       fontFamily: FontFamily.body,
       fontSize: FontSize.xs,
       color: colors.muted,
+    },
+    loadingMore: {
+      paddingVertical: Spacing.four,
+      alignItems: 'center',
     },
     emptyState: {
       minHeight: 280,

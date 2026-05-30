@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
 import { useCartStore } from '@/modules/cart';
-import { useProductsStore, type ProductVariant } from '@/modules/products';
+import { useProductsStore } from '@/modules/products';
 import { useWishlistStore } from '@/modules/wishlist';
 
 function formatPrice(value: number): string {
@@ -238,19 +238,37 @@ export default function CatalogProductDetailScreen() {
         </View>
 
         {product.variants.length ? (
-          <Section title="Variantes" styles={styles}>
-            <View style={styles.variantList}>
+          <Section title="Color" styles={styles}>
+            <View style={styles.swatchRow}>
               {product.variants.map((variant) => (
-                <VariantOption
+                <Pressable
                   key={variant.id}
-                  variant={variant}
-                  selected={variant.id === selectedVariant?.id}
-                  styles={styles}
-                  colors={colors}
+                  accessibilityRole="button"
+                  accessibilityLabel={variant.color?.name ?? variant.sku}
+                  accessibilityState={{ selected: variant.id === selectedVariant?.id }}
+                  style={({ pressed }) => [
+                    styles.colorSwatch,
+                    variant.color
+                      ? { backgroundColor: variant.color.hex }
+                      : styles.colorSwatchNoColor,
+                    variant.id === selectedVariant?.id && styles.colorSwatchSelected,
+                    pressed && styles.pressed,
+                  ]}
                   onPress={() => setSelectedVariantId(variant.id)}
-                />
+                >
+                  {!variant.color ? (
+                    <Text style={styles.colorSwatchLabel} numberOfLines={1}>{variant.sku}</Text>
+                  ) : null}
+                </Pressable>
               ))}
             </View>
+            {selectedVariant ? (
+              <Text style={styles.selectedVariantInfo}>
+                {selectedVariant.color?.name ?? selectedVariant.sku}
+                {' · '}
+                {selectedVariant.isAvailable ? 'Disponible' : 'No disponible'}
+              </Text>
+            ) : null}
           </Section>
         ) : null}
 
@@ -356,46 +374,6 @@ function Section({
   );
 }
 
-function VariantOption({
-  variant,
-  selected,
-  styles,
-  colors,
-  onPress,
-}: {
-  variant: ProductVariant;
-  selected: boolean;
-  styles: ReturnType<typeof createStyles>;
-  colors: typeof Colors.light | typeof Colors.dark;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.variantOption,
-        selected && styles.variantOptionSelected,
-        pressed && styles.pressed,
-      ]}
-      onPress={onPress}
-    >
-      <View style={styles.variantTextBlock}>
-        <View style={styles.variantNameRow}>
-          {variant.color ? (
-            <View style={[styles.colorDot, { backgroundColor: variant.color.hex }]} />
-          ) : null}
-          <Text style={styles.variantName}>
-            {variant.color ? variant.color.name : variant.sku}
-          </Text>
-        </View>
-        <Text style={styles.variantAvailability}>{variant.isAvailable ? 'Disponible' : 'No disponible'}</Text>
-      </View>
-      <Text style={[styles.variantPrice, { color: selected ? colors.accent : colors.foreground }]}>
-        {formatPrice(variant.price)}
-      </Text>
-    </Pressable>
-  );
-}
 
 function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
   return StyleSheet.create({
@@ -521,54 +499,39 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       color: colors.foreground,
       textTransform: 'uppercase',
     },
-    variantList: {
+    swatchRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: Spacing.two,
     },
-    variantOption: {
-      minHeight: 64,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: Spacing.two,
-      borderWidth: 1,
-      borderColor: colors.border,
+    colorSwatch: {
+      width: 48,
+      height: 48,
       borderRadius: Radius.sm,
-      padding: Spacing.three,
-      backgroundColor: colors.background,
-    },
-    variantOptionSelected: {
-      borderColor: colors.accent,
-      backgroundColor: colors.backgroundElement,
-    },
-    variantTextBlock: {
-      flex: 1,
-      gap: Spacing.one,
-    },
-    variantNameRow: {
-      flexDirection: 'row',
+      borderWidth: 2,
+      borderColor: 'transparent',
       alignItems: 'center',
-      gap: Spacing.two,
+      justifyContent: 'center',
+      overflow: 'hidden',
     },
-    colorDot: {
-      width: 14,
-      height: 14,
-      borderRadius: 7,
-      borderWidth: 1,
+    colorSwatchSelected: {
+      borderColor: colors.accent,
+      borderWidth: 3,
+    },
+    colorSwatchNoColor: {
+      backgroundColor: colors.backgroundElement,
       borderColor: colors.border,
     },
-    variantName: {
-      fontFamily: FontFamily.bodySemiBold,
-      fontSize: FontSize.base,
-      color: colors.foreground,
-    },
-    variantAvailability: {
+    colorSwatchLabel: {
       fontFamily: FontFamily.body,
-      fontSize: FontSize.xs,
-      color: colors.muted,
+      fontSize: FontSize.xs - 2,
+      color: colors.foreground,
+      textAlign: 'center',
     },
-    variantPrice: {
-      fontFamily: FontFamily.accentBold,
-      fontSize: FontSize.base,
+    selectedVariantInfo: {
+      fontFamily: FontFamily.body,
+      fontSize: FontSize.sm,
+      color: colors.muted,
     },
     specGrid: {
       flexDirection: 'row',

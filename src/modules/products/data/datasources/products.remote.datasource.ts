@@ -18,6 +18,7 @@ export class ProductsRemoteDataSource {
         q,
         name: filters?.name,
         categoryId: filters?.categoryId,
+        colorIds: filters?.colorIds?.length ? filters.colorIds.join(',') : undefined,
         available: filters?.available === undefined ? undefined : String(filters.available),
         minBasePrice: filters?.minBasePrice,
         maxBasePrice: filters?.maxBasePrice,

@@ -75,7 +75,7 @@ export default function ProfileScreen() {
             <MenuItem
               icon="location-outline"
               label="Mis Direcciones"
-              disabled
+              onPress={() => router.push('/addresses' as never)}
               styles={styles}
               colors={colors}
             />

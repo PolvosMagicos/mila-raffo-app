@@ -1,10 +1,15 @@
 import type { AxiosInstance } from 'axios';
 import type { Address, CreateAddressInput } from '../../domain/entities/address.entity';
 
+interface AddressesPaginatedResponse {
+  data: Address[];
+  pagination: { total: number; limit: number; offset: number };
+}
+
 export class AddressesRemoteDataSource {
   constructor(private readonly http: AxiosInstance) {}
 
-  getAll(): Promise<{ data: Address[] }> {
+  getAll(): Promise<{ data: AddressesPaginatedResponse }> {
     return this.http.get('/addresses');
   }
 
@@ -25,6 +30,6 @@ export class AddressesRemoteDataSource {
   }
 
   setDefault(id: string): Promise<{ data: Address }> {
-    return this.http.patch(`/addresses/${id}/default`);
+    return this.http.patch(`/addresses/${id}/set-default`);
   }
 }

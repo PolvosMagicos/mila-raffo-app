@@ -4,7 +4,8 @@ import { addressesModule } from '../../di';
 
 interface AddressesState {
   addresses: Address[];
-  isLoading: boolean;
+  isFetching: boolean;
+  isSaving: boolean;
   error: string | null;
 }
 
@@ -19,60 +20,61 @@ interface AddressesActions {
 
 export const useAddressesStore = create<AddressesState & AddressesActions>((set) => ({
   addresses: [],
-  isLoading: false,
+  isFetching: false,
+  isSaving: false,
   error: null,
 
   fetchAddresses: async () => {
-    set({ isLoading: true, error: null });
+    set({ isFetching: true, error: null });
     try {
       const addresses = await addressesModule.getAddressesUseCase.execute();
       set({ addresses });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : 'Error loading addresses' });
     } finally {
-      set({ isLoading: false });
+      set({ isFetching: false });
     }
   },
 
   createAddress: async (input) => {
-    set({ isLoading: true });
+    set({ isSaving: true });
     try {
       const address = await addressesModule.createAddressUseCase.execute(input);
       set((s) => ({ addresses: [...s.addresses, address] }));
     } finally {
-      set({ isLoading: false });
+      set({ isSaving: false });
     }
   },
 
   updateAddress: async (id, input) => {
-    set({ isLoading: true });
+    set({ isSaving: true });
     try {
       const updated = await addressesModule.addressesRepository.update(id, input);
       set((s) => ({ addresses: s.addresses.map((a) => (a.id === id ? updated : a)) }));
     } finally {
-      set({ isLoading: false });
+      set({ isSaving: false });
     }
   },
 
   removeAddress: async (id) => {
-    set({ isLoading: true });
+    set({ isSaving: true });
     try {
       await addressesModule.addressesRepository.remove(id);
       set((s) => ({ addresses: s.addresses.filter((a) => a.id !== id) }));
     } finally {
-      set({ isLoading: false });
+      set({ isSaving: false });
     }
   },
 
   setDefault: async (id) => {
-    set({ isLoading: true });
+    set({ isSaving: true });
     try {
-      const updated = await addressesModule.addressesRepository.setDefault(id);
+      await addressesModule.addressesRepository.setDefault(id);
       set((s) => ({
-        addresses: s.addresses.map((a) => ({ ...a, isDefault: a.id === id ? true : false })),
+        addresses: s.addresses.map((a) => ({ ...a, isDefault: a.id === id })),
       }));
     } finally {
-      set({ isLoading: false });
+      set({ isSaving: false });
     }
   },
 

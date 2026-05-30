@@ -19,6 +19,7 @@ interface ProductVariantResponse {
   stock?: number;
   isAvailable?: boolean;
   image?: ProductImageResponse | null;
+  color?: { id: string; name: string; code: string; hex: string } | null;
 }
 
 interface ProductCharacteristicResponse {
@@ -76,6 +77,9 @@ function mapVariant(variant: ProductVariantResponse): ProductVariant {
     stock: variant.stock ?? 0,
     isAvailable: variant.isAvailable ?? false,
     image,
+    color: variant.color
+      ? { id: variant.color.id, name: variant.color.name, hex: variant.color.hex }
+      : undefined,
   };
 }
 

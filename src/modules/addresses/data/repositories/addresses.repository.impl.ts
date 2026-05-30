@@ -7,7 +7,7 @@ export class AddressesRepositoryImpl implements AddressesRepository {
 
   async getAll(): Promise<Address[]> {
     const { data } = await this.remote.getAll();
-    return data;
+    return data.data;
   }
 
   async getById(id: string): Promise<Address> {

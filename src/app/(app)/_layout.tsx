@@ -87,6 +87,10 @@ export default function AppLayout() {
         name="wishlist"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="addresses"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
