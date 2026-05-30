@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -65,6 +65,7 @@ function resolveSort(option: SortOption): { sortBy: 'name' | 'basePrice' | 'crea
 
 export default function CatalogScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ categoryId?: string; q?: string }>();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -84,10 +85,13 @@ export default function CatalogScreen() {
   const removeFromWishlist = useWishlistStore((s) => s.removeFromWishlist);
   const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
 
-  const [search, setSearch] = useState('');
-  const [appliedSearch, setAppliedSearch] = useState('');
+  const initialSearch = typeof params.q === 'string' ? params.q : '';
+  const initialCategoryId = typeof params.categoryId === 'string' ? params.categoryId : undefined;
+
+  const [search, setSearch] = useState(initialSearch);
+  const [appliedSearch, setAppliedSearch] = useState(initialSearch);
   const [categoryOptions, setCategoryOptions] = useState<ProductCategory[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(initialCategoryId);
   const [availability, setAvailability] = useState<AvailabilityFilter>('available');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [minPrice, setMinPrice] = useState('');
@@ -98,6 +102,12 @@ export default function CatalogScreen() {
   const [colorOptions, setColorOptions] = useState<{ id: string; hex: string; name: string }[]>([]);
   const [filtersVisible, setFiltersVisible] = useState(false);
   const filtersAnimation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    setSearch(initialSearch);
+    setAppliedSearch(initialSearch);
+    setSelectedCategoryId(initialCategoryId);
+  }, [initialCategoryId, initialSearch]);
 
   useEffect(() => {
     Animated.timing(filtersAnimation, {
