@@ -18,6 +18,7 @@ import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme
 import { useProductsStore, type Product, type ProductCategory } from '@/modules/products';
 
 const FEATURED_LIMIT = 6;
+const HOME_BANNER_IMAGE = require('../../../assets/images/home-banner.jpeg');
 
 const COLLECTIONS = [
   { label: 'Carteras', query: 'cartera', icon: 'bag-handle-outline' },
@@ -75,8 +76,6 @@ export default function HomeScreen() {
 
   const featuredProducts = useMemo(() => products.slice(0, FEATURED_LIMIT), [products]);
   const categories = useMemo(() => getUniqueCategories(featuredProducts), [featuredProducts]);
-  const heroProduct = featuredProducts[0];
-  const heroImage = heroProduct?.images[0]?.url ?? heroProduct?.variants[0]?.image?.url;
 
   const openCatalog = useCallback(() => {
     router.push('/catalog' as never);
@@ -95,29 +94,27 @@ export default function HomeScreen() {
   }, [router]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <AppHeader />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Pressable
           accessibilityRole="button"
-          style={({ pressed }) => [styles.hero, pressed && styles.pressed]}
-          onPress={heroProduct ? () => openProduct(heroProduct) : openCatalog}
+          style={({ pressed }) => [styles.topBanner, pressed && styles.pressed]}
+          onPress={openCatalog}
         >
-          <View style={styles.heroMedia}>
-            {heroImage ? (
-              <Image
-                source={{ uri: heroImage }}
-                style={styles.heroImage}
-                contentFit="cover"
-                accessibilityLabel={heroProduct?.name ?? 'Nueva colección'}
-              />
-            ) : (
-              <View style={styles.heroPlaceholder}>
-                <Text style={styles.heroPlaceholderText}>MR</Text>
-              </View>
-            )}
-          </View>
+          <Image
+            source={HOME_BANNER_IMAGE}
+            style={styles.topBannerImage}
+            contentFit="cover"
+            accessibilityLabel="Mila Raffo"
+          />
+        </Pressable>
 
+        <Pressable
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.hero, pressed && styles.pressed]}
+          onPress={openCatalog}
+        >
           <View style={styles.heroBody}>
             <Text style={styles.eyebrow}>Nueva colección</Text>
             <Text style={styles.heroTitle}>Mila Raffo</Text>
@@ -125,7 +122,7 @@ export default function HomeScreen() {
               Carteras, bolsos y accesorios de cuero para llevar todos los días.
             </Text>
             <View style={styles.heroAction}>
-              <Text style={styles.heroActionText}>{heroProduct ? 'Ver destacado' : 'Ver catálogo'}</Text>
+              <Text style={styles.heroActionText}>Ver catálogo</Text>
               <Ionicons name="arrow-forward" size={16} color="#ffffff" />
             </View>
           </View>
@@ -302,37 +299,30 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
     },
     content: {
       paddingHorizontal: Spacing.three,
-      paddingBottom: Spacing.five,
+      paddingVertical: Spacing.four,
       gap: Spacing.three,
     },
+    topBanner: {
+      height: 160,
+      overflow: 'hidden',
+      borderRadius: Radius.md,
+      backgroundColor: colors.backgroundElement,
+    },
+    topBannerImage: {
+      width: '100%',
+      height: '100%',
+    },
     hero: {
-      minHeight: 420,
+      minHeight: 230,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: Radius.md,
-      backgroundColor: colors.backgroundElement,
-    },
-    heroMedia: {
-      height: 250,
-      backgroundColor: colors.backgroundElement,
-    },
-    heroImage: {
-      width: '100%',
-      height: '100%',
-    },
-    heroPlaceholder: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.accent,
-    },
-    heroPlaceholderText: {
-      fontFamily: FontFamily.editorialBold,
-      fontSize: FontSize['4xl'],
-      color: '#ffffff',
+      backgroundColor: colors.background,
     },
     heroBody: {
+      flex: 1,
+      justifyContent: 'center',
       gap: Spacing.two,
       padding: Spacing.four,
       backgroundColor: colors.background,
@@ -380,6 +370,7 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       minHeight: 74,
       gap: Spacing.two,
       justifyContent: 'center',
+      alignItems: "center",
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: Radius.sm,

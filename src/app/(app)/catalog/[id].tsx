@@ -138,7 +138,7 @@ export default function CatalogProductDetailScreen() {
 
   if (isLoadingProduct && !product) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
         <View style={styles.centerState}>
           <ActivityIndicator color={colors.accent} />
         </View>
@@ -148,7 +148,7 @@ export default function CatalogProductDetailScreen() {
 
   if (productError && !product) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
         <View style={styles.centerState}>
           <Text style={styles.emptyTitle}>No pudimos cargar el producto</Text>
           <Text style={styles.emptyText}>{productError}</Text>
@@ -166,7 +166,7 @@ export default function CatalogProductDetailScreen() {
 
   if (!product) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
         <View style={styles.centerState}>
           <Text style={styles.emptyTitle}>Producto no encontrado</Text>
         </View>
@@ -175,7 +175,7 @@ export default function CatalogProductDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.topBar}>
           <Pressable

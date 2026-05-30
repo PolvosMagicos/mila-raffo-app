@@ -73,7 +73,7 @@ export default function AddressesScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <View style={styles.topBar}>
         <Pressable
           accessibilityRole="button"

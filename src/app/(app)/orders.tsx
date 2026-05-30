@@ -69,7 +69,7 @@ export default function OrdersScreen() {
 
   if (isLoading && orders.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
         <AppHeader />
         <View style={styles.centerState}>
           <ActivityIndicator color={colors.accent} />
@@ -79,7 +79,7 @@ export default function OrdersScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <AppHeader />
       <FlatList
         data={orders}

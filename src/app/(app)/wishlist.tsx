@@ -68,7 +68,7 @@ export default function WishlistScreen() {
 
   if (isLoading && !wishlist) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
         <View style={styles.centerState}>
           <ActivityIndicator color={colors.accent} />
         </View>
@@ -77,7 +77,7 @@ export default function WishlistScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <FlatList
         data={wishlist?.items ?? []}
         keyExtractor={(item) => item.id}

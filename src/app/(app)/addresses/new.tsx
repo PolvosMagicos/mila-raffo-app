@@ -72,7 +72,7 @@ export default function NewAddressScreen() {
   }, [isValid, clearError, streetAddress, apartment, city, stateProvince, postalCode, country, phone, notes, isDefault, createAddress, router]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

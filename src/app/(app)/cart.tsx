@@ -77,7 +77,7 @@ export default function CartScreen() {
 
   if (isLoading && cart.items.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
         <View style={styles.centerState}>
           <ActivityIndicator color={colors.accent} />
         </View>
@@ -86,7 +86,7 @@ export default function CartScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <FlatList
         data={cart.items}
         keyExtractor={(item) => item.id}

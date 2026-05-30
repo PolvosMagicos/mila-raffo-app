@@ -285,7 +285,7 @@ export default function CatalogScreen() {
   }, [isLoadingMore, colors.accent, styles.loadingMore]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <AppHeader />
       <FlatList
         data={items}
