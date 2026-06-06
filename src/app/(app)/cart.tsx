@@ -128,11 +128,10 @@ export default function CartScreen() {
             </View>
             <Pressable
               accessibilityRole="button"
-              disabled
-              style={[styles.checkoutButton, styles.checkoutButtonDisabled]}
+              style={({ pressed }) => [styles.checkoutButton, pressed && styles.pressed]}
+              onPress={() => router.push('/checkout' as never)}
             >
               <Text style={styles.checkoutButtonText}>Proceder al pago</Text>
-              <Text style={styles.checkoutButtonSub}>Próximamente</Text>
             </Pressable>
           </View>
         ) : null}
@@ -371,18 +370,10 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       backgroundColor: colors.accent,
       gap: Spacing.one,
     },
-    checkoutButtonDisabled: {
-      opacity: 0.5,
-    },
     checkoutButtonText: {
       fontFamily: FontFamily.bodySemiBold,
       fontSize: FontSize.base,
       color: colors.background,
-    },
-    checkoutButtonSub: {
-      fontFamily: FontFamily.body,
-      fontSize: FontSize.xs,
-      color: 'rgba(255,255,255,0.75)',
     },
     centerState: {
       flex: 1,

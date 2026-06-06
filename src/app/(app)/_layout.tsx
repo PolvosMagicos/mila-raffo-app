@@ -91,6 +91,13 @@ export default function AppLayout() {
         name="addresses"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="checkout"
+        options={{
+          href: null,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
     </Tabs>
   );
 }
