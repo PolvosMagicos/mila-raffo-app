@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Image, Pressable, StyleSheet, View, useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { useAuthStore } from '@/modules/auth';
+import { useCartStore } from '@/modules/cart';
 
 const LOGO = require('../../../assets/images/logo-mila.png');
 const ACCENT = '#EC7C43';
@@ -26,8 +27,15 @@ function BrandTab() {
 
 export default function AppLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const loadCart = useCartStore((s) => s.loadCart);
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      void loadCart();
+    }
+  }, [isAuthenticated, loadCart]);
 
   if (!isAuthenticated) return <Redirect href="/login" />;
 

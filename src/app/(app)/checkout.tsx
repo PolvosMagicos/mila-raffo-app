@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +22,12 @@ import { useCartStore, type CartApiItem } from '@/modules/cart';
 type CheckoutStep = 'shipping' | 'payment' | 'review' | 'confirmation';
 type ShippingMethod = 'standard' | 'express';
 type PaymentMethod = 'whatsapp' | 'card';
+type OrderSnapshot = {
+  items: CartApiItem[];
+  itemCount: number;
+  shippingCost: number;
+  total: number;
+};
 
 const EXPRESS_SHIPPING = 24;
 const ORDER_NUMBER = 'MR-84291';
@@ -43,16 +50,35 @@ export default function CheckoutScreen() {
 
   const cart = useCartStore((s) => s.cart);
   const loadCart = useCartStore((s) => s.loadCart);
+  const removeItem = useCartStore((s) => s.removeItem);
 
   const [step, setStep] = useState<CheckoutStep>('shipping');
   const [summaryExpanded, setSummaryExpanded] = useState(false);
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>('standard');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [savePayment, setSavePayment] = useState(true);
+  const [orderSnapshot, setOrderSnapshot] = useState<OrderSnapshot | null>(null);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+  const resetCheckoutFlow = useCallback(() => {
+    setStep('shipping');
+    setSummaryExpanded(false);
+    setShippingMethod('standard');
+    setPaymentMethod('card');
+    setSavePayment(true);
+    setOrderSnapshot(null);
+    setIsPlacingOrder(false);
+  }, []);
 
   useEffect(() => {
     void loadCart();
   }, [loadCart]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return resetCheckoutFlow;
+    }, [resetCheckoutFlow]),
+  );
 
   const shippingCost = shippingMethod === 'express' ? EXPRESS_SHIPPING : 0;
   const total = cart.total + shippingCost;
@@ -60,6 +86,7 @@ export default function CheckoutScreen() {
 
   const goBack = () => {
     if (step === 'confirmation') {
+      resetCheckoutFlow();
       router.replace('/home' as never);
       return;
     }
@@ -74,7 +101,9 @@ export default function CheckoutScreen() {
     router.back();
   };
 
-  const goForward = () => {
+  const goForward = async () => {
+    if (isPlacingOrder) return;
+
     if (step === 'shipping') {
       setStep('payment');
       return;
@@ -84,8 +113,30 @@ export default function CheckoutScreen() {
       return;
     }
     if (step === 'review') {
-      setStep('confirmation');
+      setIsPlacingOrder(true);
+      setOrderSnapshot({
+        items: cart.items,
+        itemCount: cart.itemCount,
+        shippingCost,
+        total,
+      });
+
+      try {
+        for (const item of cart.items) {
+          await removeItem(item.id);
+        }
+        setStep('confirmation');
+      } finally {
+        setIsPlacingOrder(false);
+      }
     }
+  };
+
+  const confirmationSnapshot = orderSnapshot ?? {
+    items: cart.items,
+    itemCount: cart.itemCount,
+    shippingCost,
+    total,
   };
 
   return (
@@ -120,10 +171,10 @@ export default function CheckoutScreen() {
         >
           {step === 'confirmation' ? (
             <ConfirmationStep
-              cartItems={cart.items}
-              itemCount={cart.itemCount}
-              shippingCost={shippingCost}
-              total={total}
+              cartItems={confirmationSnapshot.items}
+              itemCount={confirmationSnapshot.itemCount}
+              shippingCost={confirmationSnapshot.shippingCost}
+              total={confirmationSnapshot.total}
               styles={styles}
               colors={colors}
               onShop={() => router.replace('/catalog' as never)}
@@ -201,6 +252,7 @@ export default function CheckoutScreen() {
             shippingCost={shippingCost}
             total={total}
             onPress={goForward}
+            isProcessing={isPlacingOrder}
             styles={styles}
             colors={colors}
           />
@@ -755,6 +807,7 @@ function CheckoutBottomBar({
   shippingCost,
   total,
   onPress,
+  isProcessing,
   styles,
   colors,
 }: {
@@ -763,10 +816,13 @@ function CheckoutBottomBar({
   shippingCost: number;
   total: number;
   onPress: () => void;
+  isProcessing: boolean;
   styles: ReturnType<typeof createStyles>;
   colors: typeof Colors.light | typeof Colors.dark;
 }) {
-  const buttonLabel = step === 'review' ? 'REALIZAR PEDIDO' : step === 'payment' ? 'FINALIZAR COMPRA' : 'CONTINUAR';
+  const buttonLabel = isProcessing
+    ? 'PROCESANDO...'
+    : step === 'review' ? 'REALIZAR PEDIDO' : step === 'payment' ? 'FINALIZAR COMPRA' : 'CONTINUAR';
 
   return (
     <View style={styles.bottomBar}>
@@ -789,11 +845,16 @@ function CheckoutBottomBar({
         </View>
         <Pressable
           accessibilityRole="button"
-          style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}
+          disabled={isProcessing}
+          style={({ pressed }) => [
+            styles.continueButton,
+            isProcessing && styles.continueButtonDisabled,
+            pressed && styles.pressed,
+          ]}
           onPress={onPress}
         >
           <Text style={styles.continueButtonText}>{buttonLabel}</Text>
-          <Ionicons name="arrow-forward" size={18} color={colors.background} />
+          {isProcessing ? null : <Ionicons name="arrow-forward" size={18} color={colors.background} />}
         </Pressable>
       </View>
     </View>
@@ -1654,6 +1715,9 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 6 },
       elevation: 4,
+    },
+    continueButtonDisabled: {
+      opacity: 0.7,
     },
     continueButtonText: {
       fontFamily: FontFamily.bodyBold,
