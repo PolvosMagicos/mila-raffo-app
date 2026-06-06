@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,6 +18,7 @@ import { useProductsStore, type Product, type ProductCategory } from '@/modules/
 
 const FEATURED_LIMIT = 6;
 const HOME_PRODUCTS_LIMIT = 48;
+const FEATURED_SKELETON_COUNT = 4;
 const HOME_BANNER_IMAGE = require('../../../assets/images/home-banner.jpeg');
 
 const COLLECTIONS = [
@@ -194,9 +194,7 @@ export default function HomeScreen() {
         </View>
 
         {isLoading && featuredProducts.length === 0 ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator color={colors.accent} />
-          </View>
+          <FeaturedProductsSkeleton styles={styles} />
         ) : error && featuredProducts.length === 0 ? (
           <View style={styles.messageBox}>
             <Text style={styles.messageTitle}>No pudimos cargar productos</Text>
@@ -286,6 +284,32 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function FeaturedProductsSkeleton({
+  styles,
+}: {
+  styles: ReturnType<typeof createStyles>;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.featuredList}
+      accessibilityLabel="Cargando productos recientes"
+    >
+      {Array.from({ length: FEATURED_SKELETON_COUNT }, (_, index) => (
+        <View key={index} style={styles.productCard}>
+          <View style={styles.skeletonProductImage} />
+          <View style={styles.skeletonProductBody}>
+            <View style={styles.skeletonLineSmall} />
+            <View style={styles.skeletonLineLarge} />
+            <View style={styles.skeletonLineMedium} />
+          </View>
+        </View>
+      ))}
+    </ScrollView>
   );
 }
 
@@ -443,11 +467,6 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       fontSize: FontSize.sm,
       color: colors.accent,
     },
-    loadingBox: {
-      minHeight: 180,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     messageBox: {
       gap: Spacing.two,
       borderWidth: 1,
@@ -534,6 +553,33 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       fontFamily: FontFamily.accentBold,
       fontSize: FontSize.base,
       color: colors.accent,
+    },
+    skeletonProductImage: {
+      aspectRatio: 0.82,
+      backgroundColor: colors.backgroundElement,
+    },
+    skeletonProductBody: {
+      minHeight: 104,
+      gap: Spacing.two,
+      padding: Spacing.two,
+    },
+    skeletonLineSmall: {
+      width: '48%',
+      height: 10,
+      borderRadius: Radius.sm,
+      backgroundColor: colors.backgroundElement,
+    },
+    skeletonLineLarge: {
+      width: '86%',
+      height: 16,
+      borderRadius: Radius.sm,
+      backgroundColor: colors.backgroundElement,
+    },
+    skeletonLineMedium: {
+      width: '62%',
+      height: 12,
+      borderRadius: Radius.sm,
+      backgroundColor: colors.backgroundElement,
     },
     banner: {
       minHeight: 96,

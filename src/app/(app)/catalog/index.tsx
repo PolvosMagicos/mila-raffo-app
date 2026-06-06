@@ -26,6 +26,7 @@ import { useWishlistStore } from '@/modules/wishlist';
 
 const PAGE_SIZE = 12;
 const FILTERS_PANEL_MAX_HEIGHT = 700;
+const SKELETON_CARD_COUNT = 6;
 
 type AvailabilityFilter = 'available' | 'unavailable' | 'all';
 type SortOption = 'newest' | 'priceAsc' | 'priceDesc' | 'nameAsc';
@@ -325,11 +326,13 @@ export default function CatalogScreen() {
     );
   }, [isLoadingMore, colors.accent, styles.loadingMore]);
 
+  const listData = isLoading ? [] : items;
+
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <AppHeader />
       <FlatList
-        data={items}
+        data={listData}
         keyExtractor={(item) => item.id}
         numColumns={2}
         renderItem={renderProduct}
@@ -340,7 +343,7 @@ export default function CatalogScreen() {
         ListFooterComponent={listFooter}
         refreshControl={(
           <RefreshControl
-            refreshing={isLoading}
+            refreshing={isLoading && items.length > 0}
             tintColor={colors.accent}
             onRefresh={loadProducts}
           />
@@ -567,30 +570,61 @@ export default function CatalogScreen() {
           </View>
         )}
         ListEmptyComponent={(
-          <View style={styles.emptyState}>
-            {isLoading ? (
-              <ActivityIndicator color={colors.accent} />
-            ) : selectedColorIds.length > 0 ? (
-              <>
-                <Text style={styles.emptyTitle}>Sin resultados</Text>
-                <Text style={styles.emptyText}>Ningún producto tiene variantes en el color seleccionado.</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setSelectedColorIds([])}
-                >
-                  <Text style={styles.clearSearch}>Limpiar filtro de color</Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Text style={styles.emptyTitle}>No hay productos</Text>
-                <Text style={styles.emptyText}>Cuando el backend tenga productos activos van a aparecer aca.</Text>
-              </>
-            )}
-          </View>
+          isLoading ? (
+            <CatalogLoadingState styles={styles} colors={colors} />
+          ) : (
+            <View style={styles.emptyState}>
+              {selectedColorIds.length > 0 ? (
+                <>
+                  <Text style={styles.emptyTitle}>Sin resultados</Text>
+                  <Text style={styles.emptyText}>Ningún producto tiene variantes en el color seleccionado.</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setSelectedColorIds([])}
+                  >
+                    <Text style={styles.clearSearch}>Limpiar filtro de color</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.emptyTitle}>No hay productos</Text>
+                  <Text style={styles.emptyText}>Cuando el backend tenga productos activos van a aparecer aca.</Text>
+                </>
+              )}
+            </View>
+          )
         )}
       />
     </SafeAreaView>
+  );
+}
+
+function CatalogLoadingState({
+  styles,
+  colors,
+}: {
+  styles: ReturnType<typeof createStyles>;
+  colors: typeof Colors.light | typeof Colors.dark;
+}) {
+  return (
+    <View style={styles.loadingState}>
+      <View style={styles.loadingStateHeader}>
+        <ActivityIndicator color={colors.accent} />
+        <Text style={styles.loadingStateText}>Cargando productos</Text>
+      </View>
+      <View style={styles.skeletonGrid}>
+        {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
+          <View key={index} style={styles.skeletonCard}>
+            <View style={styles.skeletonImage} />
+            <View style={styles.skeletonBody}>
+              <View style={styles.skeletonLineSmall} />
+              <View style={styles.skeletonLineLarge} />
+              <View style={styles.skeletonLineMedium} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -911,6 +945,63 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
     loadingMore: {
       paddingVertical: Spacing.four,
       alignItems: 'center',
+    },
+    loadingState: {
+      gap: Spacing.three,
+      paddingTop: Spacing.two,
+      paddingBottom: Spacing.four,
+    },
+    loadingStateHeader: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.two,
+    },
+    loadingStateText: {
+      fontFamily: FontFamily.bodySemiBold,
+      fontSize: FontSize.sm,
+      color: colors.muted,
+    },
+    skeletonGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.two,
+    },
+    skeletonCard: {
+      width: '48.5%',
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: Radius.sm,
+      backgroundColor: colors.background,
+    },
+    skeletonImage: {
+      aspectRatio: 0.82,
+      backgroundColor: colors.backgroundElement,
+    },
+    skeletonBody: {
+      minHeight: 112,
+      gap: Spacing.two,
+      padding: Spacing.two,
+    },
+    skeletonLineSmall: {
+      width: '44%',
+      height: 10,
+      borderRadius: Radius.sm,
+      backgroundColor: colors.backgroundElement,
+    },
+    skeletonLineLarge: {
+      width: '86%',
+      height: 16,
+      borderRadius: Radius.sm,
+      backgroundColor: colors.backgroundElement,
+    },
+    skeletonLineMedium: {
+      width: '60%',
+      height: 12,
+      borderRadius: Radius.sm,
+      backgroundColor: colors.backgroundElement,
     },
     emptyState: {
       minHeight: 280,
