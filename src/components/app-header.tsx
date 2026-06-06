@@ -5,12 +5,11 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
   useColorScheme,
 } from 'react-native';
 
-import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
 import { useCartStore } from '@/modules/cart';
 
 export function AppHeader() {
@@ -22,20 +21,12 @@ export function AppHeader() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-      <Pressable
-        accessibilityRole="button"
-        style={[styles.searchBar, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}
-        onPress={() => router.push('/catalog' as never)}
-      >
-        <Ionicons name="search-outline" size={16} color={colors.muted} />
-        <TextInput
-          style={[styles.searchInput, { color: colors.foreground }]}
-          placeholder="Buscar productos..."
-          placeholderTextColor={colors.muted}
-          editable={false}
-          pointerEvents="none"
-        />
-      </Pressable>
+      <View style={styles.headerCopy}>
+        <Text style={[styles.headerKicker, { color: colors.accent }]}>Mila Raffo</Text>
+        <Text style={[styles.headerTagline, { color: colors.foreground }]} numberOfLines={1}>
+          Productos reales para personas reales
+        </Text>
+      </View>
 
       <Pressable
         accessibilityRole="button"
@@ -65,21 +56,22 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     borderBottomWidth: 1,
   },
-  searchBar: {
+  headerCopy: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.two + 4,
-    paddingVertical: Spacing.two,
-    borderRadius: Radius.full,
-    borderWidth: 1,
+    minHeight: 40,
+    justifyContent: 'center',
   },
-  searchInput: {
-    flex: 1,
-    fontFamily: FontFamily.body,
-    fontSize: FontSize.sm,
-    padding: 0,
+  headerKicker: {
+    fontFamily: FontFamily.bodyBold,
+    fontSize: 10,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+  },
+  headerTagline: {
+    marginTop: Spacing.half,
+    fontFamily: FontFamily.editorialBold,
+    fontSize: FontSize.lg,
+    lineHeight: FontSize.lg,
   },
   cartButton: {
     width: 40,
