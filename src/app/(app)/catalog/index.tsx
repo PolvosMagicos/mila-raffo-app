@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -63,9 +64,25 @@ function resolveSort(option: SortOption): { sortBy: 'name' | 'basePrice' | 'crea
   return { sortBy: 'createdAt', sortOrder: 'DESC' };
 }
 
+function normalizeCategoryToken(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function matchesCategoryToken(category: ProductCategory, token: string): boolean {
+  const normalizedToken = normalizeCategoryToken(token);
+  const normalizedName = normalizeCategoryToken(category.name);
+  const normalizedSlug = normalizeCategoryToken(category.slug);
+
+  return normalizedName === normalizedToken || normalizedSlug === normalizedToken;
+}
+
 export default function CatalogScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ categoryId?: string; q?: string }>();
+  const params = useLocalSearchParams<{ categoryId?: string; categorySlug?: string; q?: string }>();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -87,6 +104,7 @@ export default function CatalogScreen() {
 
   const initialSearch = typeof params.q === 'string' ? params.q : '';
   const initialCategoryId = typeof params.categoryId === 'string' ? params.categoryId : undefined;
+  const requestedCategorySlug = typeof params.categorySlug === 'string' ? params.categorySlug : undefined;
 
   const [search, setSearch] = useState(initialSearch);
   const [appliedSearch, setAppliedSearch] = useState(initialSearch);
@@ -108,6 +126,26 @@ export default function CatalogScreen() {
     setAppliedSearch(initialSearch);
     setSelectedCategoryId(initialCategoryId);
   }, [initialCategoryId, initialSearch]);
+
+  const resetFilters = useCallback(() => {
+    setSearch('');
+    setAppliedSearch('');
+    setSelectedCategoryId(undefined);
+    setAvailability('available');
+    setSortOption('newest');
+    setMinPrice('');
+    setMaxPrice('');
+    setAppliedMinPrice(undefined);
+    setAppliedMaxPrice(undefined);
+    setSelectedColorIds([]);
+    setFiltersVisible(false);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      return resetFilters;
+    }, [resetFilters]),
+  );
 
   useEffect(() => {
     Animated.timing(filtersAnimation, {
@@ -175,6 +213,18 @@ export default function CatalogScreen() {
   }, [items]);
 
   useEffect(() => {
+    if (!requestedCategorySlug || selectedCategoryId) return;
+
+    const matchedCategory = categoryOptions.find((category) =>
+      matchesCategoryToken(category, requestedCategorySlug),
+    );
+
+    if (matchedCategory) {
+      setSelectedCategoryId(matchedCategory.id);
+    }
+  }, [categoryOptions, requestedCategorySlug, selectedCategoryId]);
+
+  useEffect(() => {
     const nextColors = items.flatMap((p) =>
       p.variants.flatMap((v) =>
         v.color ? [{ id: v.color.id, hex: v.color.hex, name: v.color.name }] : [],
@@ -208,17 +258,8 @@ export default function CatalogScreen() {
 
   const handleClearFilters = useCallback(() => {
     clearError();
-    setSearch('');
-    setAppliedSearch('');
-    setSelectedCategoryId(undefined);
-    setAvailability('available');
-    setSortOption('newest');
-    setMinPrice('');
-    setMaxPrice('');
-    setAppliedMinPrice(undefined);
-    setAppliedMaxPrice(undefined);
-    setSelectedColorIds([]);
-  }, [clearError]);
+    resetFilters();
+  }, [clearError, resetFilters]);
 
   const handleToggleColor = useCallback((id: string) => {
     setSelectedColorIds((prev) =>

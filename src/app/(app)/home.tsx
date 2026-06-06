@@ -18,13 +18,14 @@ import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme
 import { useProductsStore, type Product, type ProductCategory } from '@/modules/products';
 
 const FEATURED_LIMIT = 6;
+const HOME_PRODUCTS_LIMIT = 48;
 const HOME_BANNER_IMAGE = require('../../../assets/images/home-banner.jpeg');
 
 const COLLECTIONS = [
-  { label: 'Carteras', query: 'cartera', icon: 'bag-handle-outline' },
-  { label: 'Bolsos', query: 'bolso', icon: 'briefcase-outline' },
-  { label: 'Billeteras', query: 'billetera', icon: 'wallet-outline' },
-  { label: 'Accesorios', query: 'accesorio', icon: 'sparkles-outline' },
+  { label: 'Carteras', aliases: ['carteras', 'cartera'], icon: 'bag-handle-outline' },
+  { label: 'Bolsos', aliases: ['bolsos', 'bolso'], icon: 'briefcase-outline' },
+  { label: 'Billeteras', aliases: ['billeteras', 'billetera'], icon: 'wallet-outline' },
+  { label: 'Accesorios', aliases: ['accesorios', 'accesorio'], icon: 'sparkles-outline' },
 ] as const;
 
 const SERVICE_ITEMS = [
@@ -41,7 +42,7 @@ function formatPrice(value: number): string {
   }).format(value);
 }
 
-function getUniqueCategories(products: Product[]): ProductCategory[] {
+function getUniqueCategories(products: Product[], limit?: number): ProductCategory[] {
   const categories = new Map<string, ProductCategory>();
 
   products.forEach((product) => {
@@ -49,7 +50,33 @@ function getUniqueCategories(products: Product[]): ProductCategory[] {
     if (product.category) categories.set(product.category.id, product.category);
   });
 
-  return Array.from(categories.values()).slice(0, 4);
+  const uniqueCategories = Array.from(categories.values());
+
+  return typeof limit === 'number' ? uniqueCategories.slice(0, limit) : uniqueCategories;
+}
+
+function normalizeCategoryToken(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function findCategoryByAliases(
+  categories: ProductCategory[],
+  aliases: readonly string[],
+): ProductCategory | undefined {
+  const normalizedAliases = aliases.map(normalizeCategoryToken);
+
+  return categories.find((category) => {
+    const normalizedName = normalizeCategoryToken(category.name);
+    const normalizedSlug = normalizeCategoryToken(category.slug);
+
+    return normalizedAliases.some((alias) =>
+      normalizedName === alias || normalizedSlug === alias,
+    );
+  });
 }
 
 export default function HomeScreen() {
@@ -58,24 +85,25 @@ export default function HomeScreen() {
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const products = useProductsStore((s) => s.items);
-  const total = useProductsStore((s) => s.total);
-  const isLoading = useProductsStore((s) => s.isLoading);
-  const error = useProductsStore((s) => s.error);
-  const fetchProducts = useProductsStore((s) => s.fetchProducts);
+  const products = useProductsStore((s) => s.homeItems);
+  const total = useProductsStore((s) => s.homeTotal);
+  const isLoading = useProductsStore((s) => s.isHomeLoading);
+  const error = useProductsStore((s) => s.homeError);
+  const fetchHomeProducts = useProductsStore((s) => s.fetchHomeProducts);
   const clearError = useProductsStore((s) => s.clearError);
 
   useEffect(() => {
-    void fetchProducts({
+    void fetchHomeProducts({
       available: true,
-      limit: FEATURED_LIMIT,
+      limit: HOME_PRODUCTS_LIMIT,
       sortBy: 'createdAt',
       sortOrder: 'DESC',
     });
-  }, [fetchProducts]);
+  }, [fetchHomeProducts]);
 
   const featuredProducts = useMemo(() => products.slice(0, FEATURED_LIMIT), [products]);
-  const categories = useMemo(() => getUniqueCategories(featuredProducts), [featuredProducts]);
+  const categories = useMemo(() => getUniqueCategories(products, 4), [products]);
+  const availableCategories = useMemo(() => getUniqueCategories(products), [products]);
 
   const openCatalog = useCallback(() => {
     router.push('/catalog' as never);
@@ -88,6 +116,17 @@ export default function HomeScreen() {
   const openCategory = useCallback((category: ProductCategory) => {
     router.push(`/catalog?categoryId=${encodeURIComponent(category.id)}` as never);
   }, [router]);
+
+  const openCollectionCategory = useCallback((aliases: readonly string[]) => {
+    const category = findCategoryByAliases(availableCategories, aliases);
+
+    if (category) {
+      openCategory(category);
+      return;
+    }
+
+    router.push(`/catalog?categorySlug=${encodeURIComponent(aliases[0])}` as never);
+  }, [availableCategories, openCategory, router]);
 
   const openProduct = useCallback((product: Product) => {
     router.push(`/catalog/${product.id}` as never);
@@ -134,7 +173,7 @@ export default function HomeScreen() {
               key={collection.label}
               accessibilityRole="button"
               style={({ pressed }) => [styles.quickButton, pressed && styles.pressed]}
-              onPress={() => openSearch(collection.query)}
+              onPress={() => openCollectionCategory(collection.aliases)}
             >
               <Ionicons name={collection.icon} size={22} color={colors.accent} />
               <Text style={styles.quickText}>{collection.label}</Text>
@@ -167,9 +206,9 @@ export default function HomeScreen() {
               style={({ pressed }) => [styles.outlineButton, pressed && styles.pressed]}
               onPress={() => {
                 clearError();
-                void fetchProducts({
+                void fetchHomeProducts({
                   available: true,
-                  limit: FEATURED_LIMIT,
+                  limit: HOME_PRODUCTS_LIMIT,
                   sortBy: 'createdAt',
                   sortOrder: 'DESC',
                 });
