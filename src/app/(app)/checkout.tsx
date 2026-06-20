@@ -18,7 +18,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Palette, Radius, Spacing } from '@/constants/theme';
 import { PressScale } from '@/components/ui/animations';
+import { useAddressesStore, type Address } from '@/modules/addresses';
+import { useAuthStore } from '@/modules/auth';
 import { useCartStore, type CartApiItem } from '@/modules/cart';
+import { useOrdersStore, type Order, type OrderAddress } from '@/modules/orders';
+import { createPayment } from '@/modules/payments';
 
 type CheckoutStep = 'shipping' | 'payment' | 'review' | 'confirmation';
 type ShippingMethod = 'standard' | 'express';
@@ -28,10 +32,12 @@ type OrderSnapshot = {
   itemCount: number;
   shippingCost: number;
   total: number;
+  orderId?: string;
+  orderNumber?: string;
+  deliveryAddress?: OrderAddress;
 };
 
 const EXPRESS_SHIPPING = 24;
-const ORDER_NUMBER = 'MR-84291';
 const PROMISE_IMAGE =
   'https://images.unsplash.com/photo-1590736704728-f4730bb30770?auto=format&fit=crop&w=900&q=80';
 
@@ -43,15 +49,34 @@ function formatPrice(value: number): string {
   }).format(value);
 }
 
+function toOrderAddress(address: Address, user: { name?: string; lastName?: string } | null): OrderAddress {
+  return {
+    firstName: user?.name?.trim() || 'Cliente',
+    lastName: user?.lastName?.trim() || 'Mila Raffo',
+    streetAddress: address.streetAddress,
+    apartment: address.apartment,
+    city: address.city,
+    stateProvince: address.stateProvince,
+    postalCode: address.postalCode,
+    country: address.country,
+    phone: address.phone,
+  };
+}
+
 export default function CheckoutScreen() {
   const router = useRouter();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const user = useAuthStore((s) => s.user);
   const cart = useCartStore((s) => s.cart);
   const loadCart = useCartStore((s) => s.loadCart);
-  const removeItem = useCartStore((s) => s.removeItem);
+  const clearCart = useCartStore((s) => s.clearCart);
+  const addresses = useAddressesStore((s) => s.addresses);
+  const isFetchingAddresses = useAddressesStore((s) => s.isFetching);
+  const fetchAddresses = useAddressesStore((s) => s.fetchAddresses);
+  const createOrder = useOrdersStore((s) => s.createOrder);
 
   const [step, setStep] = useState<CheckoutStep>('shipping');
   const [summaryExpanded, setSummaryExpanded] = useState(false);
@@ -60,6 +85,7 @@ export default function CheckoutScreen() {
   const [savePayment, setSavePayment] = useState(true);
   const [orderSnapshot, setOrderSnapshot] = useState<OrderSnapshot | null>(null);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const resetCheckoutFlow = useCallback(() => {
     setStep('shipping');
@@ -69,11 +95,12 @@ export default function CheckoutScreen() {
     setSavePayment(true);
     setOrderSnapshot(null);
     setIsPlacingOrder(false);
+    setCheckoutError(null);
   }, []);
 
   useEffect(() => {
-    void loadCart();
-  }, [loadCart]);
+    void Promise.all([loadCart(), fetchAddresses()]);
+  }, [fetchAddresses, loadCart]);
 
   useFocusEffect(
     useCallback(() => {
@@ -84,6 +111,14 @@ export default function CheckoutScreen() {
   const shippingCost = shippingMethod === 'express' ? EXPRESS_SHIPPING : 0;
   const total = cart.total + shippingCost;
   const title = step === 'confirmation' ? 'Pedido completado' : step;
+  const defaultAddress = useMemo(
+    () => addresses.find((address) => address.isDefault) ?? addresses[0] ?? null,
+    [addresses],
+  );
+  const orderAddress = useMemo(
+    () => (defaultAddress ? toOrderAddress(defaultAddress, user) : null),
+    [defaultAddress, user],
+  );
 
   const goBack = () => {
     if (step === 'confirmation') {
@@ -104,8 +139,17 @@ export default function CheckoutScreen() {
 
   const goForward = async () => {
     if (isPlacingOrder) return;
+    setCheckoutError(null);
 
     if (step === 'shipping') {
+      if (!orderAddress) {
+        setCheckoutError('Agrega una direccion de entrega antes de continuar.');
+        return;
+      }
+      if (cart.items.length === 0) {
+        setCheckoutError('Tu carrito esta vacio.');
+        return;
+      }
       setStep('payment');
       return;
     }
@@ -114,19 +158,46 @@ export default function CheckoutScreen() {
       return;
     }
     if (step === 'review') {
+      if (!orderAddress) {
+        setCheckoutError('Agrega una direccion de entrega antes de realizar el pedido.');
+        return;
+      }
+      if (cart.items.length === 0) {
+        setCheckoutError('Tu carrito esta vacio.');
+        return;
+      }
       setIsPlacingOrder(true);
-      setOrderSnapshot({
-        items: cart.items,
-        itemCount: cart.itemCount,
-        shippingCost,
-        total,
-      });
 
       try {
-        for (const item of cart.items) {
-          await removeItem(item.id);
+        const order = await createOrder({
+          items: cart.items.map((item) => ({
+            variantId: item.variantId,
+            quantity: item.quantity,
+          })),
+          shippingAddress: orderAddress,
+          billingAddress: orderAddress,
+          notes: shippingMethod === 'express' ? 'Envio express solicitado desde la app.' : undefined,
+        });
+
+        const payment = await createPayment(order.id, paymentMethod === 'card' ? 'test' : 'bank_transfer');
+        if (paymentMethod === 'card' && payment.status === 'failed') {
+          throw new Error(payment.errorMessage ?? 'No pudimos procesar el pago.');
         }
+
+        const paidOrder = payment.order ? { ...order, paymentStatus: payment.order.paymentStatus as Order['paymentStatus'] } : order;
+        setOrderSnapshot({
+          items: cart.items,
+          itemCount: cart.itemCount,
+          shippingCost,
+          total: paidOrder.total,
+          orderId: paidOrder.id,
+          orderNumber: paidOrder.orderNumber,
+          deliveryAddress: orderAddress,
+        });
+        await clearCart();
         setStep('confirmation');
+      } catch (err) {
+        setCheckoutError(err instanceof Error ? err.message : 'No pudimos crear el pedido.');
       } finally {
         setIsPlacingOrder(false);
       }
@@ -138,6 +209,7 @@ export default function CheckoutScreen() {
     itemCount: cart.itemCount,
     shippingCost,
     total,
+    deliveryAddress: orderAddress ?? undefined,
   };
 
   return (
@@ -176,9 +248,13 @@ export default function CheckoutScreen() {
               itemCount={confirmationSnapshot.itemCount}
               shippingCost={confirmationSnapshot.shippingCost}
               total={confirmationSnapshot.total}
+              orderId={confirmationSnapshot.orderId}
+              orderNumber={confirmationSnapshot.orderNumber}
+              deliveryAddress={confirmationSnapshot.deliveryAddress}
               styles={styles}
               colors={colors}
               onShop={() => router.replace('/catalog' as never)}
+              onTrack={(orderId) => router.replace(`/orders/${orderId}/shipment` as never)}
             />
           ) : (
             <>
@@ -210,8 +286,11 @@ export default function CheckoutScreen() {
 
               {step === 'shipping' ? (
                 <ShippingStep
+                  address={orderAddress}
+                  isLoadingAddress={isFetchingAddresses}
                   selected={shippingMethod}
                   onSelect={setShippingMethod}
+                  onManageAddresses={() => router.push('/addresses' as never)}
                   styles={styles}
                   colors={colors}
                 />
@@ -234,6 +313,7 @@ export default function CheckoutScreen() {
                   subtotal={cart.total}
                   shippingCost={shippingCost}
                   total={total}
+                  address={orderAddress}
                   shippingMethod={shippingMethod}
                   paymentMethod={paymentMethod}
                   onEditShipping={() => setStep('shipping')}
@@ -242,6 +322,7 @@ export default function CheckoutScreen() {
                   colors={colors}
                 />
               ) : null}
+              {checkoutError ? <Text style={styles.checkoutError}>{checkoutError}</Text> : null}
             </>
           )}
         </ScrollView>
@@ -254,6 +335,7 @@ export default function CheckoutScreen() {
             total={total}
             onPress={goForward}
             isProcessing={isPlacingOrder}
+            disabled={cart.items.length === 0 || (step !== 'payment' && !orderAddress)}
             styles={styles}
             colors={colors}
           />
@@ -408,13 +490,19 @@ function SummaryItems({
 }
 
 function ShippingStep({
+  address,
+  isLoadingAddress,
   selected,
   onSelect,
+  onManageAddresses,
   styles,
   colors,
 }: {
+  address: OrderAddress | null;
+  isLoadingAddress: boolean;
   selected: ShippingMethod;
   onSelect: (method: ShippingMethod) => void;
+  onManageAddresses: () => void;
   styles: ReturnType<typeof createStyles>;
   colors: typeof Colors.light | typeof Colors.dark;
 }) {
@@ -422,22 +510,33 @@ function ShippingStep({
     <>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Detalles de envio</Text>
-        <Text style={styles.sectionSubtitle}>Completa la informacion para la entrega.</Text>
+        <Text style={styles.sectionSubtitle}>Usaremos tu direccion predeterminada para crear el pedido.</Text>
 
-        <View style={styles.form}>
-          <CheckoutInput label="NOMBRE COMPLETO" placeholder="Julian Vane" styles={styles} colors={colors} />
-          <CheckoutInput label="DIRECCION" placeholder="Av. Artesanos 123" styles={styles} colors={colors} />
-          <View style={styles.inputGrid}>
-            <CheckoutInput label="CIUDAD" placeholder="Lima" styles={styles} colors={colors} />
-            <CheckoutInput label="CODIGO POSTAL" placeholder="15074" styles={styles} colors={colors} />
-          </View>
-          <CheckoutInput
-            label="TELEFONO"
-            placeholder="+51 999 999 999"
-            keyboardType="phone-pad"
-            styles={styles}
-            colors={colors}
-          />
+        <View style={styles.addressCard}>
+          {isLoadingAddress ? (
+            <Text style={styles.addressMuted}>Cargando direccion...</Text>
+          ) : address ? (
+            <>
+              <Text style={styles.addressName}>{address.firstName} {address.lastName}</Text>
+              <Text style={styles.addressLine}>{address.streetAddress}</Text>
+              {address.apartment ? <Text style={styles.addressLine}>{address.apartment}</Text> : null}
+              <Text style={styles.addressLine}>
+                {address.city}, {address.stateProvince} {address.postalCode}
+              </Text>
+              <Text style={styles.addressLine}>{address.country}</Text>
+              {address.phone ? <Text style={styles.addressMuted}>{address.phone}</Text> : null}
+            </>
+          ) : (
+            <Text style={styles.addressMuted}>No tienes una direccion guardada para la entrega.</Text>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.addressAction, pressed && styles.pressedSoft]}
+            onPress={onManageAddresses}
+          >
+            <Text style={styles.addressActionText}>{address ? 'CAMBIAR DIRECCION' : 'AGREGAR DIRECCION'}</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+          </Pressable>
         </View>
       </View>
 
@@ -564,6 +663,7 @@ function ReviewStep({
   subtotal,
   shippingCost,
   total,
+  address,
   shippingMethod,
   paymentMethod,
   onEditShipping,
@@ -575,6 +675,7 @@ function ReviewStep({
   subtotal: number;
   shippingCost: number;
   total: number;
+  address: OrderAddress | null;
   shippingMethod: ShippingMethod;
   paymentMethod: PaymentMethod;
   onEditShipping: () => void;
@@ -587,9 +688,17 @@ function ReviewStep({
       <Text style={styles.reviewTitle}>Revisar pedido</Text>
 
       <ReviewBlock title="ENVIAR A" onEdit={onEditShipping} styles={styles}>
-        <Text style={styles.reviewText}>Av. Artesanos 123</Text>
-        <Text style={styles.reviewText}>Lima, 15074</Text>
-        <Text style={styles.reviewText}>Peru</Text>
+        {address ? (
+          <>
+            <Text style={styles.reviewText}>{address.firstName} {address.lastName}</Text>
+            <Text style={styles.reviewText}>{address.streetAddress}</Text>
+            {address.apartment ? <Text style={styles.reviewText}>{address.apartment}</Text> : null}
+            <Text style={styles.reviewText}>{address.city}, {address.postalCode}</Text>
+            <Text style={styles.reviewText}>{address.country}</Text>
+          </>
+        ) : (
+          <Text style={styles.reviewText}>Direccion pendiente</Text>
+        )}
         <Text style={styles.reviewMuted}>
           {shippingMethod === 'standard' ? 'Entrega estandar' : 'Envio express'}
         </Text>
@@ -673,7 +782,11 @@ function ConfirmationStep({
   itemCount,
   shippingCost,
   total,
+  orderId,
+  orderNumber,
+  deliveryAddress,
   onShop,
+  onTrack,
   styles,
   colors,
 }: {
@@ -681,7 +794,11 @@ function ConfirmationStep({
   itemCount: number;
   shippingCost: number;
   total: number;
+  orderId?: string;
+  orderNumber?: string;
+  deliveryAddress?: OrderAddress;
   onShop: () => void;
+  onTrack: (orderId: string) => void;
   styles: ReturnType<typeof createStyles>;
   colors: typeof Colors.light | typeof Colors.dark;
 }) {
@@ -695,9 +812,11 @@ function ConfirmationStep({
         <Text style={styles.successText}>
           Gracias por confiar en Mila Raffo. Tu pedido ya esta listo para coordinarse.
         </Text>
-        <View style={styles.orderBadge}>
-          <Text style={styles.orderBadgeText}>{ORDER_NUMBER}</Text>
-        </View>
+        {orderNumber ? (
+          <View style={styles.orderBadge}>
+            <Text style={styles.orderBadgeText}>{orderNumber}</Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.confirmationCard}>
@@ -745,10 +864,23 @@ function ConfirmationStep({
           <View style={styles.deliveryText}>
             <Text style={styles.fieldLabel}>ENTREGA ESTIMADA</Text>
             <Text style={styles.deliveryTitle}>5 - 7 dias habiles</Text>
-            <Text style={styles.reviewMuted}>Av. Artesanos 123, Lima</Text>
+            <Text style={styles.reviewMuted}>
+              {deliveryAddress ? `${deliveryAddress.streetAddress}, ${deliveryAddress.city}` : 'Direccion pendiente'}
+            </Text>
           </View>
         </View>
-        <Pressable accessibilityRole="button" style={({ pressed }) => [styles.secondaryAction, pressed && styles.pressed]}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={!orderId}
+          style={({ pressed }) => [
+            styles.secondaryAction,
+            !orderId && styles.secondaryActionDisabled,
+            pressed && styles.pressed,
+          ]}
+          onPress={() => {
+            if (orderId) onTrack(orderId);
+          }}
+        >
           <Text style={styles.secondaryActionText}>RASTREAR PEDIDO</Text>
         </Pressable>
       </View>
@@ -809,6 +941,7 @@ function CheckoutBottomBar({
   total,
   onPress,
   isProcessing,
+  disabled,
   styles,
   colors,
 }: {
@@ -818,6 +951,7 @@ function CheckoutBottomBar({
   total: number;
   onPress: () => void;
   isProcessing: boolean;
+  disabled: boolean;
   styles: ReturnType<typeof createStyles>;
   colors: typeof Colors.light | typeof Colors.dark;
 }) {
@@ -847,10 +981,10 @@ function CheckoutBottomBar({
         <PressScale>
           <Pressable
             accessibilityRole="button"
-            disabled={isProcessing}
+            disabled={isProcessing || disabled}
             style={({ pressed }) => [
               styles.continueButton,
-              isProcessing && styles.continueButtonDisabled,
+              (isProcessing || disabled) && styles.continueButtonDisabled,
               pressed && styles.pressed,
             ]}
             onPress={onPress}
@@ -1321,6 +1455,56 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
     form: {
       marginTop: Spacing.four,
       gap: Spacing.four,
+    },
+    addressCard: {
+      marginTop: Spacing.four,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: Radius.md,
+      backgroundColor: surfaceContainer,
+      padding: Spacing.three,
+      gap: Spacing.one,
+    },
+    addressName: {
+      fontFamily: FontFamily.bodyBold,
+      fontSize: FontSize.base,
+      color: colors.foreground,
+    },
+    addressLine: {
+      fontFamily: FontFamily.body,
+      fontSize: FontSize.sm,
+      color: colors.foreground,
+      lineHeight: FontSize.sm * 1.45,
+    },
+    addressMuted: {
+      fontFamily: FontFamily.body,
+      fontSize: FontSize.sm,
+      color: colors.muted,
+      lineHeight: FontSize.sm * 1.45,
+    },
+    addressAction: {
+      marginTop: Spacing.two,
+      minHeight: 42,
+      borderRadius: Radius.sm,
+      backgroundColor: activeSurface,
+      paddingHorizontal: Spacing.three,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    addressActionText: {
+      fontFamily: FontFamily.bodyBold,
+      fontSize: FontSize.xs,
+      color: colors.accent,
+      letterSpacing: 1,
+    },
+    checkoutError: {
+      marginHorizontal: Spacing.three,
+      marginTop: Spacing.three,
+      fontFamily: FontFamily.bodySemiBold,
+      fontSize: FontSize.sm,
+      color: '#ba1a1a',
+      lineHeight: FontSize.sm * 1.5,
     },
     inputGrid: {
       flexDirection: 'row',
@@ -1851,6 +2035,9 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       backgroundColor: activeSurface,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    secondaryActionDisabled: {
+      opacity: 0.55,
     },
     secondaryActionText: {
       fontFamily: FontFamily.bodyBold,

@@ -7,7 +7,7 @@ export class OrdersRepositoryImpl implements OrdersRepository {
 
   async getAll(): Promise<Order[]> {
     const { data } = await this.remote.getAll();
-    return data;
+    return Array.isArray(data) ? data : data.data;
   }
 
   async getById(id: string): Promise<Order> {

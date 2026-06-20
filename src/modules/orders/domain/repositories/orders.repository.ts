@@ -1,7 +1,16 @@
-import type { Order, OrderStatus } from '../entities/order.entity';
+import type { Order, OrderAddress } from '../entities/order.entity';
+
+export interface CreateOrderItemInput {
+  variantId: string;
+  quantity: number;
+  customization?: string;
+}
 
 export interface CreateOrderInput {
-  addressId: string;
+  items: CreateOrderItemInput[];
+  shippingAddress: OrderAddress;
+  billingAddress: OrderAddress;
+  couponCode?: string;
   notes?: string;
 }
 
