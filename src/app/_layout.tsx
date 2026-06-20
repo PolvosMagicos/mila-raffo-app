@@ -56,6 +56,8 @@ export default function RootLayout() {
       const data = response.notification.request.content.data as Record<string, unknown>;
       if (data.type === 'order_status' && typeof data.orderId === 'string') {
         router.push(`/orders/${data.orderId}` as never);
+      } else if (data.type === 'shipment_status' && typeof data.orderId === 'string') {
+        router.push(`/orders/${data.orderId}/shipment` as never);
       } else if (data.type === 'offer') {
         router.push('/catalog' as never);
       }

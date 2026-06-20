@@ -83,6 +83,18 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="orders/[id]"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="orders/[id]/index"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="orders/[id]/shipment"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Perfil',
@@ -93,6 +105,10 @@ export default function AppLayout() {
       />
       <Tabs.Screen
         name="wishlist"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="notification-settings"
         options={{ href: null }}
       />
       <Tabs.Screen
