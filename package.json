@@ -17,8 +17,8 @@
     "@expo-google-fonts/raleway": "^0.4.2",
     "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@react-navigation/bottom-tabs": "7.15.11",
-    "@react-navigation/elements": "2.9.15",
-    "@react-navigation/native": "7.2.2",
+    "@react-navigation/elements": "2.9.19",
+    "@react-navigation/native": "7.2.5",
     "axios": "^1.16.1",
     "expo": "~55.0.24",
     "expo-constants": "~55.0.16",
@@ -27,6 +27,8 @@
     "expo-glass-effect": "~55.0.11",
     "expo-image": "~55.0.10",
     "expo-linking": "~55.0.15",
+    "expo-location": "~55.1.10",
+    "expo-notifications": "^0.29.14",
     "expo-router": "~55.0.14",
     "expo-secure-store": "^55.0.14",
     "expo-splash-screen": "~55.0.21",
@@ -51,5 +53,9 @@
     "eslint-config-expo": "~55.0.1",
     "typescript": "~5.9.3"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "@react-navigation/native": "7.2.5",
+    "@react-navigation/elements": "2.9.19"
+  }
 }

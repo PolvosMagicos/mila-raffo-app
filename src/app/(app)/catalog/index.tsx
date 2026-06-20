@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
 import { AppHeader } from '@/components/app-header';
+import { Float, Shimmer, StaggerItem } from '@/components/ui/animations';
 import { useProductsStore, type Product, type ProductCategory } from '@/modules/products';
 import { useWishlistStore } from '@/modules/wishlist';
 
@@ -297,21 +298,23 @@ export default function CatalogScreen() {
   }, [hasMore, isLoadingMore, loadMoreProducts, productFilters]);
 
   const renderProduct = useCallback(
-    ({ item }: { item: Product }) => {
+    ({ item, index }: { item: Product; index: number }) => {
       const firstVariantId = item.variants[0]?.id;
       const inWishlist = firstVariantId
         ? (wishlist?.items.some((i) => i.variantId === firstVariantId) ?? false)
         : false;
 
       return (
-        <ProductCard
-          product={item}
-          inWishlist={inWishlist}
-          onToggleWishlist={handleToggleWishlist}
-          onOpen={handleOpenProduct}
-          styles={styles}
-          colors={colors}
-        />
+        <StaggerItem index={index} style={styles.productCardWrapper}>
+          <ProductCard
+            product={item}
+            inWishlist={inWishlist}
+            onToggleWishlist={handleToggleWishlist}
+            onOpen={handleOpenProduct}
+            styles={styles}
+            colors={colors}
+          />
+        </StaggerItem>
       );
     },
     [handleToggleWishlist, handleOpenProduct, wishlist, styles, colors],
@@ -574,6 +577,13 @@ export default function CatalogScreen() {
             <CatalogLoadingState styles={styles} colors={colors} />
           ) : (
             <View style={styles.emptyState}>
+              <Float>
+                <Ionicons
+                  name={selectedColorIds.length > 0 ? 'color-filter-outline' : 'grid-outline'}
+                  size={64}
+                  color={colors.border}
+                />
+              </Float>
               {selectedColorIds.length > 0 ? (
                 <>
                   <Text style={styles.emptyTitle}>Sin resultados</Text>
@@ -615,11 +625,11 @@ function CatalogLoadingState({
       <View style={styles.skeletonGrid}>
         {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
           <View key={index} style={styles.skeletonCard}>
-            <View style={styles.skeletonImage} />
+            <Shimmer style={styles.skeletonImage} borderRadius={0} />
             <View style={styles.skeletonBody}>
-              <View style={styles.skeletonLineSmall} />
-              <View style={styles.skeletonLineLarge} />
-              <View style={styles.skeletonLineMedium} />
+              <Shimmer style={styles.skeletonLineSmall} />
+              <Shimmer style={styles.skeletonLineLarge} />
+              <Shimmer style={styles.skeletonLineMedium} />
             </View>
           </View>
         ))}
@@ -876,9 +886,12 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       gap: Spacing.two,
       marginBottom: Spacing.two,
     },
-    productCard: {
+    productCardWrapper: {
       flex: 1,
       maxWidth: '49%',
+    },
+    productCard: {
+      flex: 1,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: colors.border,

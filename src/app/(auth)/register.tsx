@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Shake, type ShakeRef } from '@/components/ui/animations';
 import { useAuthStore } from '@/modules/auth';
 
 const BG = require('../../../assets/images/auth-bg.png');
@@ -38,8 +39,13 @@ export default function RegisterScreen() {
   const lastNameRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
+  const shakeRef = useRef<ShakeRef>(null);
 
   const error = localError || storeError;
+
+  useEffect(() => {
+    if (error) shakeRef.current?.trigger();
+  }, [error]);
 
   function clearLocal() { setLocalError(''); clearError(); }
 
@@ -95,75 +101,77 @@ export default function RegisterScreen() {
               <Text style={styles.subtitle}>Completa tus datos para comenzar</Text>
             </View>
 
-            {/* Nombre y apellido */}
-            <View style={styles.row}>
-              <View style={[styles.inputWrapper, styles.inputHalf]}>
-                <Text style={styles.inputLabel}>NOMBRE</Text>
+            <Shake ref={shakeRef}>
+              {/* Nombre y apellido */}
+              <View style={styles.row}>
+                <View style={[styles.inputWrapper, styles.inputHalf]}>
+                  <Text style={styles.inputLabel}>NOMBRE</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="María"
+                    placeholderTextColor="rgba(255,255,255,0.6)"
+                    value={name}
+                    onChangeText={(v) => { clearLocal(); setName(v); }}
+                    autoCapitalize="words"
+                    autoComplete="given-name"
+                    returnKeyType="next"
+                    onSubmitEditing={() => lastNameRef.current?.focus()}
+                    editable={!isLoading}
+                  />
+                </View>
+                <View style={[styles.inputWrapper, styles.inputHalf]}>
+                  <Text style={styles.inputLabel}>APELLIDO</Text>
+                  <TextInput
+                    ref={lastNameRef}
+                    style={styles.input}
+                    placeholder="García"
+                    placeholderTextColor="rgba(255,255,255,0.6)"
+                    value={lastName}
+                    onChangeText={(v) => { clearLocal(); setLastName(v); }}
+                    autoCapitalize="words"
+                    autoComplete="family-name"
+                    returnKeyType="next"
+                    onSubmitEditing={() => emailRef.current?.focus()}
+                    editable={!isLoading}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>EMAIL</Text>
                 <TextInput
+                  ref={emailRef}
                   style={styles.input}
-                  placeholder="María"
+                  placeholder="tu@email.com"
                   placeholderTextColor="rgba(255,255,255,0.6)"
-                  value={name}
-                  onChangeText={(v) => { clearLocal(); setName(v); }}
-                  autoCapitalize="words"
-                  autoComplete="given-name"
+                  value={email}
+                  onChangeText={(v) => { clearLocal(); setEmail(v); }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
                   returnKeyType="next"
-                  onSubmitEditing={() => lastNameRef.current?.focus()}
+                  onSubmitEditing={() => passwordRef.current?.focus()}
                   editable={!isLoading}
                 />
               </View>
-              <View style={[styles.inputWrapper, styles.inputHalf]}>
-                <Text style={styles.inputLabel}>APELLIDO</Text>
+
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>CONTRASEÑA</Text>
                 <TextInput
-                  ref={lastNameRef}
+                  ref={passwordRef}
                   style={styles.input}
-                  placeholder="García"
+                  placeholder="Mínimo 8 caracteres"
                   placeholderTextColor="rgba(255,255,255,0.6)"
-                  value={lastName}
-                  onChangeText={(v) => { clearLocal(); setLastName(v); }}
-                  autoCapitalize="words"
-                  autoComplete="family-name"
-                  returnKeyType="next"
-                  onSubmitEditing={() => emailRef.current?.focus()}
+                  value={password}
+                  onChangeText={(v) => { clearLocal(); setPassword(v); }}
+                  secureTextEntry
+                  autoComplete="new-password"
+                  returnKeyType="done"
+                  onSubmitEditing={handleRegister}
                   editable={!isLoading}
                 />
               </View>
-            </View>
-
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>EMAIL</Text>
-              <TextInput
-                ref={emailRef}
-                style={styles.input}
-                placeholder="tu@email.com"
-                placeholderTextColor="rgba(255,255,255,0.6)"
-                value={email}
-                onChangeText={(v) => { clearLocal(); setEmail(v); }}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                returnKeyType="next"
-                onSubmitEditing={() => passwordRef.current?.focus()}
-                editable={!isLoading}
-              />
-            </View>
-
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>CONTRASEÑA</Text>
-              <TextInput
-                ref={passwordRef}
-                style={styles.input}
-                placeholder="Mínimo 8 caracteres"
-                placeholderTextColor="rgba(255,255,255,0.6)"
-                value={password}
-                onChangeText={(v) => { clearLocal(); setPassword(v); }}
-                secureTextEntry
-                autoComplete="new-password"
-                returnKeyType="done"
-                onSubmitEditing={handleRegister}
-                editable={!isLoading}
-              />
-            </View>
+            </Shake>
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 

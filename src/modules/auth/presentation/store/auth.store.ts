@@ -54,6 +54,10 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
     try {
       const session = await authModule.loginUseCase.execute(credentials);
       set({ user: session.user, tokens: session.tokens, isAuthenticated: true });
+      // Register push token after successful login (fire-and-forget)
+      void import('@/modules/notifications').then(({ notificationsStore }) => {
+        void notificationsStore.getState().registerPushToken();
+      });
     } catch (err) {
       set({ error: extractErrorMessage(err, 'Error al iniciar sesión') });
       throw err;
@@ -67,6 +71,9 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
     try {
       const session = await authModule.registerUseCase.execute(credentials);
       set({ user: session.user, tokens: session.tokens, isAuthenticated: true });
+      void import('@/modules/notifications').then(({ notificationsStore }) => {
+        void notificationsStore.getState().registerPushToken();
+      });
     } catch (err) {
       set({ error: extractErrorMessage(err, 'Error al registrarse') });
       throw err;
@@ -79,6 +86,10 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
     const { tokens } = get();
     set({ isLoading: true, error: null });
     try {
+      // Unregister push token before clearing session
+      void import('@/modules/notifications').then(({ notificationsStore }) => {
+        void notificationsStore.getState().unregisterPushToken();
+      });
       if (tokens) {
         await authModule.logoutUseCase.execute(tokens.accessToken, tokens.refreshToken);
       }

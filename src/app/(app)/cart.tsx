@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Float } from '@/components/ui/animations';
 import { useCartStore, type CartApiItem } from '@/modules/cart';
 
 function formatPrice(value: number): string {
@@ -108,7 +109,9 @@ export default function CartScreen() {
         )}
         ListEmptyComponent={(
           <View style={styles.emptyState}>
-            <Ionicons name="cart-outline" size={64} color={colors.border} />
+            <Float>
+              <Ionicons name="cart-outline" size={64} color={colors.border} />
+            </Float>
             <Text style={styles.emptyTitle}>Tu carrito está vacío</Text>
             <Text style={styles.emptyText}>Explora el catálogo y agrega productos.</Text>
             <Pressable

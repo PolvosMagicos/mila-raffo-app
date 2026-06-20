@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -10,14 +10,24 @@ import {
 } from 'react-native';
 
 import { Colors, FontFamily, FontSize, Spacing } from '@/constants/theme';
+import { Bounce, type BounceRef } from '@/components/ui/animations';
 import { useCartStore } from '@/modules/cart';
 
 export function AppHeader() {
   const router = useRouter();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const bounceRef = useRef<BounceRef>(null);
 
   const itemCount = useCartStore((s) => s.cart.itemCount);
+  const prevCountRef = useRef(itemCount);
+
+  useEffect(() => {
+    if (itemCount > prevCountRef.current) {
+      bounceRef.current?.trigger();
+    }
+    prevCountRef.current = itemCount;
+  }, [itemCount]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -36,9 +46,11 @@ export function AppHeader() {
       >
         <Ionicons name="bag-outline" size={24} color={colors.foreground} />
         {itemCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{itemCount > 9 ? '9+' : itemCount}</Text>
-          </View>
+          <Bounce ref={bounceRef} style={styles.badgeWrap}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{itemCount > 9 ? '9+' : itemCount}</Text>
+            </View>
+          </Bounce>
         )}
       </Pressable>
     </View>
@@ -79,10 +91,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badge: {
+  badgeWrap: {
     position: 'absolute',
     top: 2,
     right: 2,
+  },
+  badge: {
     minWidth: 16,
     height: 16,
     borderRadius: 8,

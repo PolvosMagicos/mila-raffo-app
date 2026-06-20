@@ -90,6 +90,19 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <View style={styles.menuSection}>
+          <Text style={styles.menuSectionTitle}>Ajustes</Text>
+          <View style={styles.menuCard}>
+            <MenuItem
+              icon="notifications-outline"
+              label="Notificaciones"
+              onPress={() => router.push('/notification-settings' as never)}
+              styles={styles}
+              colors={colors}
+            />
+          </View>
+        </View>
+
         <Pressable
           accessibilityRole="button"
           style={({ pressed }) => [styles.logoutButton, pressed && styles.pressed]}

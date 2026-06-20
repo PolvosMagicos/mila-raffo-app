@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Palette, Radius, Spacing } from '@/constants/theme';
+import { PressScale } from '@/components/ui/animations';
 import { useCartStore, type CartApiItem } from '@/modules/cart';
 
 type CheckoutStep = 'shipping' | 'payment' | 'review' | 'confirmation';
@@ -843,19 +844,21 @@ function CheckoutBottomBar({
           <Text style={styles.totalLabel}>{step === 'payment' ? 'TOTAL A PAGAR' : 'TOTAL'}</Text>
           <Text style={styles.totalValue}>{formatPrice(total)}</Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isProcessing}
-          style={({ pressed }) => [
-            styles.continueButton,
-            isProcessing && styles.continueButtonDisabled,
-            pressed && styles.pressed,
-          ]}
-          onPress={onPress}
-        >
-          <Text style={styles.continueButtonText}>{buttonLabel}</Text>
-          {isProcessing ? null : <Ionicons name="arrow-forward" size={18} color={colors.background} />}
-        </Pressable>
+        <PressScale>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isProcessing}
+            style={({ pressed }) => [
+              styles.continueButton,
+              isProcessing && styles.continueButtonDisabled,
+              pressed && styles.pressed,
+            ]}
+            onPress={onPress}
+          >
+            <Text style={styles.continueButtonText}>{buttonLabel}</Text>
+            {isProcessing ? null : <Ionicons name="arrow-forward" size={18} color={colors.background} />}
+          </Pressable>
+        </PressScale>
       </View>
     </View>
   );

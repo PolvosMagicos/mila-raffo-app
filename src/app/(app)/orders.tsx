@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
 import { AppHeader } from '@/components/app-header';
+import { Float } from '@/components/ui/animations';
 import { useOrdersStore, type Order, type OrderStatus } from '@/modules/orders';
 
 function formatPrice(value: number): string {
@@ -93,7 +94,9 @@ export default function OrdersScreen() {
         )}
         ListEmptyComponent={(
           <View style={styles.emptyState}>
-            <Ionicons name="receipt-outline" size={64} color={colors.border} />
+            <Float>
+              <Ionicons name="receipt-outline" size={64} color={colors.border} />
+            </Float>
             <Text style={styles.emptyTitle}>Aún no tienes pedidos</Text>
             <Text style={styles.emptyText}>Cuando realices una compra, tus pedidos aparecerán aquí.</Text>
             <Pressable

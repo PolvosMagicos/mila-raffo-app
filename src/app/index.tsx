@@ -1,12 +1,35 @@
 import { Redirect } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
+import { BrandedSplash } from '@/components/branded-splash';
 import { useAuthStore } from '@/modules/auth';
+import { useOnboardingStore } from '@/modules/onboarding';
+
+// Tiempo mínimo que el BrandedSplash es visible antes de empezar el fade-out.
+// El splash nativo ya oculta el período de carga; estos ms son el "momento de marca".
+const SPLASH_MIN_MS = 600;
 
 export default function Index() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const onboardingCompleted = useOnboardingStore((s) => s.isCompleted);
+  const [shouldHide, setShouldHide] = useState(false);
+  const [splashHidden, setSplashHidden] = useState(false);
 
-  // El root _layout.tsx ya esperó a que isLoading = false antes de renderizar <Slot>.
-  // Acá el estado de auth ya está resuelto — redirigimos sin condición de carga.
-  return <Redirect href={isAuthenticated ? '/home' : '/login'} />;
+  useEffect(() => {
+    const timer = setTimeout(() => setShouldHide(true), SPLASH_MIN_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!splashHidden) {
+    return (
+      <BrandedSplash
+        shouldHide={shouldHide}
+        onHidden={() => setSplashHidden(true)}
+      />
+    );
+  }
+
+  if (!isAuthenticated) return <Redirect href="/login" />;
+  if (onboardingCompleted === false) return <Redirect href={'/step-1-welcome' as never} />;
+  return <Redirect href="/home" />;
 }

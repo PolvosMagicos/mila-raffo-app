@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/app-header';
+import { Shimmer } from '@/components/ui/animations';
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
 import { useProductsStore, type Product, type ProductCategory } from '@/modules/products';
 
@@ -301,11 +302,11 @@ function FeaturedProductsSkeleton({
     >
       {Array.from({ length: FEATURED_SKELETON_COUNT }, (_, index) => (
         <View key={index} style={styles.productCard}>
-          <View style={styles.skeletonProductImage} />
+          <Shimmer style={styles.skeletonProductImage} borderRadius={0} />
           <View style={styles.skeletonProductBody}>
-            <View style={styles.skeletonLineSmall} />
-            <View style={styles.skeletonLineLarge} />
-            <View style={styles.skeletonLineMedium} />
+            <Shimmer style={styles.skeletonLineSmall} />
+            <Shimmer style={styles.skeletonLineLarge} />
+            <Shimmer style={styles.skeletonLineMedium} />
           </View>
         </View>
       ))}

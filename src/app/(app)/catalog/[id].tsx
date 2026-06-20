@@ -6,14 +6,17 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
   useColorScheme,
 } from 'react-native';
+import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
+import { PressScale } from '@/components/ui/animations';
 import { useCartStore } from '@/modules/cart';
 import { useProductsStore } from '@/modules/products';
 import { useWishlistStore } from '@/modules/wishlist';
@@ -30,6 +33,32 @@ function formatCharValue(value: string, dataType: string, units?: string): strin
   if (dataType === 'bool') return value === 'true' ? 'Sí' : 'No';
   if (units) return `${value} ${units}`;
   return value;
+}
+
+const CHAR_ICON_MAP: Array<[string, React.ComponentProps<typeof Ionicons>['name']]> = [
+  ['material', 'layers-outline'],
+  ['color', 'color-palette-outline'],
+  ['dimensi', 'resize-outline'],
+  ['tamaño', 'resize-outline'],
+  ['medida', 'resize-outline'],
+  ['largo', 'resize-outline'],
+  ['ancho', 'resize-outline'],
+  ['alto', 'resize-outline'],
+  ['peso', 'scale-outline'],
+  ['cierre', 'lock-closed-outline'],
+  ['capacidad', 'bag-outline'],
+  ['correa', 'link-outline'],
+  ['acabado', 'brush-outline'],
+  ['forro', 'shirt-outline'],
+  ['bolsillo', 'layers-outline'],
+];
+
+function getCharIcon(name: string): React.ComponentProps<typeof Ionicons>['name'] {
+  const lower = name.toLowerCase();
+  for (const [key, icon] of CHAR_ICON_MAP) {
+    if (lower.includes(key)) return icon;
+  }
+  return 'checkmark-circle-outline';
 }
 
 export default function CatalogProductDetailScreen() {
@@ -136,6 +165,12 @@ export default function CatalogProductDetailScreen() {
     }
   }, [fetchProductById, productId]);
 
+  const handleShare = useCallback(async () => {
+    if (!product || !productId) return;
+    const deepLink = Linking.createURL(`/catalog/${productId}`);
+    await Share.share({ message: `Mirá este producto: ${product.name}\n${deepLink}` });
+  }, [product, productId]);
+
   if (isLoadingProduct && !product) {
     return (
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
@@ -187,6 +222,13 @@ export default function CatalogProductDetailScreen() {
           </Pressable>
 
           <View style={styles.topBarRight}>
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.heartButtonTop, pressed && styles.pressed]}
+              onPress={() => void handleShare()}
+            >
+              <Ionicons name="share-outline" size={22} color={colors.foreground} />
+            </Pressable>
             {selectedVariant ? (
               <Pressable
                 accessibilityRole="button"
@@ -272,21 +314,6 @@ export default function CatalogProductDetailScreen() {
           </Section>
         ) : null}
 
-        {product.characteristics.length ? (
-          <Section title="Características" styles={styles}>
-            <View style={styles.specGrid}>
-              {product.characteristics.map((characteristic) => (
-                <View key={characteristic.id} style={styles.specItem}>
-                  <Text style={styles.specLabel}>{characteristic.name}</Text>
-                  <Text style={styles.specValue}>
-                    {formatCharValue(characteristic.value, characteristic.dataType, characteristic.units)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </Section>
-        ) : null}
-
         {cartItemForVariant ? (
           <View style={styles.cartControls}>
             <View style={styles.inCartRow}>
@@ -335,23 +362,50 @@ export default function CatalogProductDetailScreen() {
             </Pressable>
           </View>
         ) : (
-          <Pressable
-            accessibilityRole="button"
-            disabled={!canAddToCart || isAddingToCart || !selectedVariant}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              (!canAddToCart || isAddingToCart || !selectedVariant) && styles.primaryButtonDisabled,
-              pressed && styles.pressed,
-            ]}
-            onPress={handleAddToCart}
-          >
-            {isAddingToCart ? (
-              <ActivityIndicator color={colors.background} />
-            ) : (
-              <Text style={styles.primaryButtonText}>Agregar al carrito</Text>
-            )}
-          </Pressable>
+          <PressScale>
+            <Pressable
+              accessibilityRole="button"
+              disabled={!canAddToCart || isAddingToCart || !selectedVariant}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                (!canAddToCart || isAddingToCart || !selectedVariant) && styles.primaryButtonDisabled,
+                pressed && styles.pressed,
+              ]}
+              onPress={handleAddToCart}
+            >
+              {isAddingToCart ? (
+                <ActivityIndicator color={colors.background} />
+              ) : (
+                <Text style={styles.primaryButtonText}>Agregar al carrito</Text>
+              )}
+            </Pressable>
+          </PressScale>
         )}
+
+        {product.characteristics.length ? (
+          <Section title="Características" styles={styles}>
+            <View style={styles.charList}>
+              {product.characteristics.map((char, index) => (
+                <React.Fragment key={char.id}>
+                  {index > 0 && <View style={styles.charDivider} />}
+                  <View style={styles.charRow}>
+                    <View style={styles.charIconBox}>
+                      <Ionicons
+                        name={getCharIcon(char.name)}
+                        size={17}
+                        color={colors.accent}
+                      />
+                    </View>
+                    <Text style={styles.charName}>{char.name}</Text>
+                    <Text style={styles.charValue} numberOfLines={2}>
+                      {formatCharValue(char.value, char.dataType, char.units)}
+                    </Text>
+                  </View>
+                </React.Fragment>
+              ))}
+            </View>
+          </Section>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -533,31 +587,41 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       fontSize: FontSize.sm,
       color: colors.muted,
     },
-    specGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: Spacing.two,
-    },
-    specItem: {
-      minWidth: '47%',
-      flex: 1,
-      gap: Spacing.one,
+    charList: {
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: Radius.sm,
-      padding: Spacing.three,
+      borderRadius: Radius.md,
+      overflow: 'hidden',
+    },
+    charRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.three,
+      paddingVertical: Spacing.three,
+      paddingHorizontal: Spacing.three,
       backgroundColor: colors.background,
     },
-    specLabel: {
-      fontFamily: FontFamily.body,
-      fontSize: FontSize.xs,
-      color: colors.muted,
-      textTransform: 'uppercase',
+    charDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginLeft: Spacing.three + 17 + Spacing.three,
     },
-    specValue: {
+    charIconBox: {
+      width: 17,
+      alignItems: 'center',
+    },
+    charName: {
+      flex: 1,
+      fontFamily: FontFamily.body,
+      fontSize: FontSize.sm,
+      color: colors.muted,
+    },
+    charValue: {
       fontFamily: FontFamily.bodySemiBold,
-      fontSize: FontSize.lg,
+      fontSize: FontSize.sm,
       color: colors.foreground,
+      textAlign: 'right',
+      maxWidth: '55%',
     },
     cartControls: {
       gap: Spacing.two,

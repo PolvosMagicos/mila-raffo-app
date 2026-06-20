@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/theme';
+import { Shake, type ShakeRef } from '@/components/ui/animations';
 import { useAuthStore } from '@/modules/auth';
 
 const BG = require('../../../assets/images/auth-bg.png');
@@ -27,12 +28,17 @@ export default function LoginScreen() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const storeError = useAuthStore((s) => s.error);
   const clearError = useAuthStore((s) => s.clearError);
+  const shakeRef = useRef<ShakeRef>(null);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
 
   const error = localError || storeError;
+
+  useEffect(() => {
+    if (error) shakeRef.current?.trigger();
+  }, [error]);
 
   function validate(): boolean {
     if (!email.trim()) { setLocalError('El email es requerido'); return false; }
@@ -73,39 +79,41 @@ export default function LoginScreen() {
             </View>
 
             {/* Formulario */}
-            <View style={styles.form}>
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>EMAIL</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="tu@email.com"
-                  placeholderTextColor="rgba(255,255,255,0.6)"
-                  value={email}
-                  onChangeText={(v) => { setLocalError(''); clearError(); setEmail(v); }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  returnKeyType="next"
-                  editable={!isLoading}
-                />
-              </View>
+            <Shake ref={shakeRef}>
+              <View style={styles.form}>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>EMAIL</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="tu@email.com"
+                    placeholderTextColor="rgba(255,255,255,0.6)"
+                    value={email}
+                    onChangeText={(v) => { setLocalError(''); clearError(); setEmail(v); }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    returnKeyType="next"
+                    editable={!isLoading}
+                  />
+                </View>
 
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>CONTRASEÑA</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="••••••••"
-                  placeholderTextColor="rgba(255,255,255,0.6)"
-                  value={password}
-                  onChangeText={(v) => { setLocalError(''); clearError(); setPassword(v); }}
-                  secureTextEntry
-                  autoComplete="current-password"
-                  returnKeyType="done"
-                  onSubmitEditing={handleLogin}
-                  editable={!isLoading}
-                />
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>CONTRASEÑA</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="rgba(255,255,255,0.6)"
+                    value={password}
+                    onChangeText={(v) => { setLocalError(''); clearError(); setPassword(v); }}
+                    secureTextEntry
+                    autoComplete="current-password"
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
+                    editable={!isLoading}
+                  />
+                </View>
               </View>
-            </View>
+            </Shake>
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 

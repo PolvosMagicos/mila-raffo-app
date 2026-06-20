@@ -1,6 +1,9 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosResponse, type AxiosError } from 'axios';
+import { DeviceEventEmitter } from 'react-native';
 import { ENV } from '@/core/config/env';
 import { secureStorage } from '@/core/storage/secure-storage';
+
+export const AUTH_SESSION_EXPIRED_EVENT = 'auth:session_expired';
 
 const STORAGE_KEYS = {
   ACCESS_TOKEN: 'auth.access_token',
@@ -86,12 +89,13 @@ apiClient.interceptors.response.use(
       return apiClient(original);
     } catch (refreshError) {
       clearQueue();
-      // Signal the auth store to clear session
       await Promise.all([
         secureStorage.delete(STORAGE_KEYS.ACCESS_TOKEN),
         secureStorage.delete(STORAGE_KEYS.REFRESH_TOKEN),
         secureStorage.delete('auth.user'),
       ]);
+      // Notificar al auth store sin importarlo directamente (evita dependencia circular)
+      DeviceEventEmitter.emit(AUTH_SESSION_EXPIRED_EVENT);
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
