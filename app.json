@@ -24,6 +24,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/logo-mila.png",
+          "color": "#EC7C43",
+          "sounds": []
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#EC7C43",

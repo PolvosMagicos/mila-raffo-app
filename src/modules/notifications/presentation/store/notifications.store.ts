@@ -35,7 +35,7 @@ export const useNotificationsStore = create<NotificationsState & NotificationsAc
 
   registerPushToken: async () => {
     try {
-      if (!Device.isDevice) return;
+      if (!Device.isDevice && !__DEV__) return;
 
       let { granted } = await Notifications.getPermissionsAsync();
 

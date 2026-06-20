@@ -83,10 +83,6 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="orders/[id]"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
         name="orders/[id]/index"
         options={{ href: null }}
       />
