@@ -6,6 +6,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
 import { DeviceEventEmitter, useColorScheme } from 'react-native';
 
+import { APP_FONTS } from '@/constants/fonts';
+import { AUTH_SESSION_EXPIRED_EVENT } from '@/core/network/api-client';
+import { useAuthStore } from '@/modules/auth';
+import { useOnboardingStore } from '@/modules/onboarding';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -15,11 +20,6 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
-
-import { APP_FONTS } from '@/constants/fonts';
-import { AUTH_SESSION_EXPIRED_EVENT } from '@/core/network/api-client';
-import { useAuthStore } from '@/modules/auth';
-import { useOnboardingStore } from '@/modules/onboarding';
 
 SplashScreen.preventAutoHideAsync();
 

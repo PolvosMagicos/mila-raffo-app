@@ -25,7 +25,6 @@ export default function AddressesScreen() {
 
   const addresses = useAddressesStore((s) => s.addresses);
   const isFetching = useAddressesStore((s) => s.isFetching);
-  const isSaving = useAddressesStore((s) => s.isSaving);
   const fetchAddresses = useAddressesStore((s) => s.fetchAddresses);
   const removeAddress = useAddressesStore((s) => s.removeAddress);
   const setDefault = useAddressesStore((s) => s.setDefault);

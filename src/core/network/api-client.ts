@@ -1,4 +1,10 @@
-import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosResponse, type AxiosError } from 'axios';
+import axios, {
+  create as createAxios,
+  type AxiosInstance,
+  type InternalAxiosRequestConfig,
+  type AxiosResponse,
+  type AxiosError,
+} from 'axios';
 import { DeviceEventEmitter } from 'react-native';
 import { ENV } from '@/core/config/env';
 import { secureStorage } from '@/core/storage/secure-storage';
@@ -16,7 +22,7 @@ interface RefreshResponse {
 }
 
 let isRefreshing = false;
-let refreshQueue: Array<(token: string) => void> = [];
+let refreshQueue: ((token: string) => void)[] = [];
 
 function drainQueue(newToken: string) {
   refreshQueue.forEach((resolve) => resolve(newToken));
@@ -27,7 +33,7 @@ function clearQueue() {
   refreshQueue = [];
 }
 
-export const apiClient: AxiosInstance = axios.create({
+export const apiClient: AxiosInstance = createAxios({
   baseURL: ENV.API_URL,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },

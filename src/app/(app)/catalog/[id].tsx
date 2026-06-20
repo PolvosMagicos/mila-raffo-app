@@ -35,7 +35,7 @@ function formatCharValue(value: string, dataType: string, units?: string): strin
   return value;
 }
 
-const CHAR_ICON_MAP: Array<[string, React.ComponentProps<typeof Ionicons>['name']]> = [
+const CHAR_ICON_MAP: [string, React.ComponentProps<typeof Ionicons>['name']][] = [
   ['material', 'layers-outline'],
   ['color', 'color-palette-outline'],
   ['dimensi', 'resize-outline'],

@@ -244,9 +244,11 @@ export default function ShipmentTrackingScreen() {
     );
   }
 
-  const status = order.shipment?.status;
+  const shipment = order.shipment;
+  const status = shipment?.status;
   const copy = getStatusCopy(status);
   const shippingAddress = order.shippingAddress;
+  const isPendingShipment = !shipment || status === 'En preparacion';
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
@@ -263,14 +265,7 @@ export default function ShipmentTrackingScreen() {
         </Pressable>
       </View>
 
-      {!order.shipment ? (
-        <ShipmentPendingState
-          order={order}
-          colors={colors}
-          styles={styles}
-          onBackToOrders={() => router.push('/orders' as never)}
-        />
-      ) : status === 'En preparacion' ? (
+      {isPendingShipment ? (
         <ShipmentPendingState
           order={order}
           colors={colors}
@@ -288,9 +283,9 @@ export default function ShipmentTrackingScreen() {
 
             <View style={styles.trackingCard}>
               <Text style={styles.kicker}>Mensajería</Text>
-              <Text style={styles.trackingValue}>{order.shipment.courier ?? 'Por confirmar'}</Text>
+              <Text style={styles.trackingValue}>{shipment.courier ?? 'Por confirmar'}</Text>
               <Text style={[styles.kicker, styles.kickerSpaced]}>Número de seguimiento</Text>
-              <Text style={styles.trackingNumber}>{order.shipment.trackingNumber ?? 'Pendiente'}</Text>
+              <Text style={styles.trackingNumber}>{shipment.trackingNumber ?? 'Pendiente'}</Text>
             </View>
           </View>
 

@@ -95,7 +95,7 @@ export default function NewAddressScreen() {
           <Text style={styles.title}>Nueva dirección</Text>
 
           <View style={styles.form}>
-            <Field label="Dirección *" styles={styles} colors={colors}>
+            <Field label="Dirección *" styles={styles}>
               <TextInput
                 value={streetAddress}
                 onChangeText={setStreetAddress}
@@ -107,7 +107,7 @@ export default function NewAddressScreen() {
               />
             </Field>
 
-            <Field label="Apartamento / Piso" styles={styles} colors={colors}>
+            <Field label="Apartamento / Piso" styles={styles}>
               <TextInput
                 value={apartment}
                 onChangeText={setApartment}
@@ -119,7 +119,7 @@ export default function NewAddressScreen() {
               />
             </Field>
 
-            <Field label="Ciudad *" styles={styles} colors={colors}>
+            <Field label="Ciudad *" styles={styles}>
               <TextInput
                 value={city}
                 onChangeText={setCity}
@@ -131,7 +131,7 @@ export default function NewAddressScreen() {
               />
             </Field>
 
-            <Field label="Provincia / Región *" styles={styles} colors={colors}>
+            <Field label="Provincia / Región *" styles={styles}>
               <TextInput
                 value={stateProvince}
                 onChangeText={setStateProvince}
@@ -143,7 +143,7 @@ export default function NewAddressScreen() {
               />
             </Field>
 
-            <Field label="Código postal *" styles={styles} colors={colors}>
+            <Field label="Código postal *" styles={styles}>
               <TextInput
                 value={postalCode}
                 onChangeText={setPostalCode}
@@ -155,7 +155,7 @@ export default function NewAddressScreen() {
               />
             </Field>
 
-            <Field label="País *" styles={styles} colors={colors}>
+            <Field label="País *" styles={styles}>
               <TextInput
                 value={country}
                 onChangeText={setCountry}
@@ -167,7 +167,7 @@ export default function NewAddressScreen() {
               />
             </Field>
 
-            <Field label="Teléfono de contacto" styles={styles} colors={colors}>
+            <Field label="Teléfono de contacto" styles={styles}>
               <TextInput
                 value={phone}
                 onChangeText={setPhone}
@@ -179,7 +179,7 @@ export default function NewAddressScreen() {
               />
             </Field>
 
-            <Field label="Notas de entrega" styles={styles} colors={colors}>
+            <Field label="Notas de entrega" styles={styles}>
               <TextInput
                 value={notes}
                 onChangeText={setNotes}
@@ -232,12 +232,10 @@ function Field({
   label,
   children,
   styles,
-  colors,
 }: {
   label: string;
   children: React.ReactNode;
   styles: ReturnType<typeof createStyles>;
-  colors: typeof Colors.light | typeof Colors.dark;
 }) {
   return (
     <View style={styles.field}>

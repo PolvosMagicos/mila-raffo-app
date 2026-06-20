@@ -6,12 +6,11 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Colors, FontFamily, FontSize, Palette, Radius, Spacing } from '@/constants/theme';
+import { FontFamily, FontSize, Palette, Radius, Spacing } from '@/constants/theme';
 import { FadeInView, PressScale } from '@/components/ui/animations';
 
 const BG = require('../../../assets/images/auth-bg.png');
@@ -20,9 +19,7 @@ const TOTAL_STEPS = 4;
 
 export default function OnboardingStep1() {
   const router = useRouter();
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const styles = useMemo(createStyles, []);
 
   return (
     <ImageBackground source={BG} style={styles.bg} resizeMode="cover">
@@ -103,7 +100,7 @@ const dotStyles = StyleSheet.create({
   },
 });
 
-function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
+function createStyles() {
   return StyleSheet.create({
     bg: { flex: 1 },
     overlay: {

@@ -1,10 +1,10 @@
 import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
-import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
+import React from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
   return (
@@ -49,9 +49,6 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 }
 
 function WebTabList(props: TabListProps) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-
   return (
     <View {...props} style={styles.container}>
       <ThemedView type="backgroundElement" style={[styles.inner, { maxWidth: MaxContentWidth }]}>

@@ -550,7 +550,6 @@ function ShippingStep({
             selected={selected === 'standard'}
             onPress={() => onSelect('standard')}
             styles={styles}
-            colors={colors}
           />
           <ShippingOption
             title="Envio express"
@@ -559,7 +558,6 @@ function ShippingStep({
             selected={selected === 'express'}
             onPress={() => onSelect('express')}
             styles={styles}
-            colors={colors}
           />
         </View>
       </View>
@@ -1124,7 +1122,6 @@ function ShippingOption({
   selected,
   onPress,
   styles,
-  colors,
 }: {
   title: string;
   subtitle: string;
@@ -1132,7 +1129,6 @@ function ShippingOption({
   selected: boolean;
   onPress: () => void;
   styles: ReturnType<typeof createStyles>;
-  colors: typeof Colors.light | typeof Colors.dark;
 }) {
   return (
     <Pressable
