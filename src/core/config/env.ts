@@ -1,7 +1,9 @@
-//const DEV_API_URL = 'http://taller-movil.polvos-magicos.com/api/v1';
-const DEV_API_URL = 'http://localhost:3000/api/v1';
-const PROD_API_URL = '';
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '');
+
+if (!API_URL) {
+  throw new Error('EXPO_PUBLIC_API_URL is not configured');
+}
 
 export const ENV = {
-  API_URL: __DEV__ ? DEV_API_URL : PROD_API_URL,
+  API_URL,
 } as const;
