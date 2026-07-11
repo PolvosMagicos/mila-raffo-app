@@ -9,7 +9,10 @@
     "pixel": "adb reverse tcp:3000 tcp:3000 && adb reverse tcp:8081 tcp:8081 && expo start --android --localhost --go -c",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "jest --runInBand",
+    "test:unit": "jest --runInBand __tests__/unit",
+    "test:coverage": "jest --runInBand --coverage"
   },
   "dependencies": {
     "@expo-google-fonts/bitter": "^0.4.1",
@@ -48,9 +51,12 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
     "@types/react": "~19.2.14",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~55.0.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.11",
     "typescript": "~5.9.3"
   },
   "private": true,
