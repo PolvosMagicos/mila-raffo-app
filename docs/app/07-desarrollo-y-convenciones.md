@@ -13,8 +13,52 @@
 | `npm run web` | Abrir web |
 | `npm run pixel` | Android local con adb reverse y cache clean |
 | `npm run lint` | Ejecutar lint de Expo |
+| `npm test` | Ejecutar todas las suites Jest |
+| `npm run test:unit` | Ejecutar solo suites unitarias bajo `__tests__/unit` |
+| `npm run test:coverage` | Ejecutar Jest con reporte de cobertura |
 
 Tambien existe `bun.lock`; si el equipo usa Bun, mantener consistencia con el gestor elegido para evitar churn de lockfiles.
+
+## Pruebas automatizadas
+
+La app usa Jest con `ts-jest` para ejecutar pruebas TypeScript en ambiente `node`. La configuracion esta en `jest.config.js` y el setup de mocks externos esta en `jest.setup.ts`.
+
+La configuracion actual:
+
+- Deshabilita Watchman con `watchman: false` para evitar dependencia del estado local del host.
+- Usa `moduleNameMapper` para resolver imports con alias `@/`.
+- Ejecuta tests en `src/**/__tests__/**/*.test.ts`.
+- Mockea servicios externos de Expo como `expo-secure-store`, `expo-constants`, `expo-router` y `expo-location`.
+- Mantiene las pruebas hermeticas: no levantan backend, no usan storage real, no requieren emulador y no hacen llamadas HTTP.
+
+Cobertura funcional actual:
+
+| Tipo | Suites | Tests | Alcance |
+|---|---:|---:|---|
+| Unitarias | 4 | 51 | Calculos de carrito, filtros de productos, reglas de checkout, totales y estados de pedido |
+| Integracion | 2 | 9 | Servicio de catalogo con fallback y flujo completo de carrito entre repository, datasource en memoria y calculos |
+| Total | 6 | 60 | Logica de negocio deterministica y colaboracion entre modulos |
+
+Resultados verificados:
+
+```bash
+npm run test:unit
+# 4 suites pasaron, 51 tests pasaron
+
+npm test
+# 6 suites pasaron, 60 tests pasaron
+
+npm run test:coverage
+# 6 suites pasaron, 60 tests pasaron
+
+npm run lint
+# paso sin errores
+
+npx tsc --noEmit
+# paso sin errores
+```
+
+El diseno detallado de casos, trazabilidad, aislamiento y oraculos esta en `docs/test-design.md`.
 
 ## TypeScript
 
@@ -84,6 +128,14 @@ Para cambios de codigo:
 
 ```bash
 npm run lint
+npm test
+npx tsc --noEmit
+```
+
+Si el cambio toca reglas de negocio, filtros, calculos o flujos entre modulos, ejecutar tambien:
+
+```bash
+npm run test:coverage
 ```
 
 Para cambios de documentacion pura, no es necesario ejecutar Expo ni levantar backend, pero si conviene revisar links y paths.

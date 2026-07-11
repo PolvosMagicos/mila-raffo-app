@@ -12,7 +12,7 @@
 | [04 - Modulos Funcionales](./04-modulos-funcionales.md) | Auth, productos, carrito, pedidos, perfil, direcciones, wishlist |
 | [05 - Integracion API y Persistencia](./05-integracion-api-y-persistencia.md) | API client, tokens, endpoints consumidos, storage local |
 | [06 - Estado y UI](./06-estado-y-ui.md) | Zustand, stores, tema, convenciones visuales y pantallas |
-| [07 - Desarrollo y Convenciones](./07-desarrollo-y-convenciones.md) | Comandos, TypeScript, imports, patrones para nuevos cambios |
+| [07 - Desarrollo y Convenciones](./07-desarrollo-y-convenciones.md) | Comandos, TypeScript, imports, pruebas automatizadas, patrones para nuevos cambios |
 | [08 - Riesgos y Recomendaciones](./08-riesgos-y-recomendaciones.md) | Riesgos actuales, deuda tecnica y mejoras priorizadas |
 
 ## Documentos existentes
@@ -26,3 +26,4 @@ Estos documentos siguen siendo utiles como guias puntuales y quedan referenciado
 | [Modulos](../modules.md) | Guia paso a paso para crear un modulo nuevo |
 | [Navegacion](../navigation.md) | Guia practica de Expo Router |
 | [Tema](../theme.md) | Tokens de color, tipografia, spacing y radius |
+| [Diseno de pruebas](../test-design.md) | Matriz de trazabilidad, aislamiento, oraculos y resultados de Jest |

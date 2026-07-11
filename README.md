@@ -26,6 +26,9 @@ npm run android
 npm run ios
 npm run web
 npm run lint
+npm test
+npm run test:unit
+npm run test:coverage
 ```
 
 La URL del backend se configura en `src/core/config/env.ts`. En desarrollo apunta a:
@@ -45,3 +48,4 @@ Guias puntuales existentes:
 - [Modulos](./docs/modules.md)
 - [Navegacion](./docs/navigation.md)
 - [Tema](./docs/theme.md)
+- [Diseno de pruebas](./docs/test-design.md)
