@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -106,7 +105,7 @@ export default function OnboardingStep2() {
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior='padding'
       >
         <FadeInView slideFrom="bottom" delay={0} duration={250} style={styles.headerRow}>
           <StepDots total={TOTAL_STEPS} current={1} />

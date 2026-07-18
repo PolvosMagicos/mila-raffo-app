@@ -582,76 +582,81 @@ function PaymentStep({
 }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.fieldLabel}>METODO DE PAGO</Text>
-      <View style={styles.paymentCard}>
-        <Pressable
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.paymentOption, pressed && styles.pressedSoft]}
-          onPress={() => onSelectPayment('whatsapp')}
-        >
-          <View style={styles.paymentOptionLeft}>
-            <View style={styles.whatsappIcon}>
-              <Ionicons name="logo-whatsapp" size={24} color="#ffffff" />
-            </View>
-            <View style={styles.paymentOptionText}>
-              <Text style={styles.paymentTitle}>Pagar por WhatsApp</Text>
-              <Text style={styles.paymentSubtitle}>Finaliza tu pedido con un asesor</Text>
-            </View>
-          </View>
-          <View style={[styles.paymentRadio, paymentMethod === 'whatsapp' && styles.paymentRadioActive]}>
-            {paymentMethod === 'whatsapp' ? <View style={styles.radioInner} /> : null}
-          </View>
-        </Pressable>
-
-        <View style={styles.cardPaymentBody}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior='padding'
+      >
+        <Text style={styles.fieldLabel}>METODO DE PAGO</Text>
+        <View style={styles.paymentCard}>
           <Pressable
             accessibilityRole="button"
-            style={styles.cardPaymentHeader}
-            onPress={() => onSelectPayment('card')}
+            style={({ pressed }) => [styles.paymentOption, pressed && styles.pressedSoft]}
+            onPress={() => onSelectPayment('whatsapp')}
           >
-            <View style={styles.cardIcon}>
-              <Ionicons name="card" size={20} color={colors.background} />
+            <View style={styles.paymentOptionLeft}>
+              <View style={styles.whatsappIcon}>
+                <Ionicons name="logo-whatsapp" size={24} color="#ffffff" />
+              </View>
+              <View style={styles.paymentOptionText}>
+                <Text style={styles.paymentTitle}>Pagar por WhatsApp</Text>
+                <Text style={styles.paymentSubtitle}>Finaliza tu pedido con un asesor</Text>
+              </View>
             </View>
-            <Text style={styles.paymentTitle}>Tarjeta de credito o debito</Text>
-            <View style={[styles.paymentRadio, paymentMethod === 'card' && styles.paymentRadioActive]}>
-              {paymentMethod === 'card' ? <View style={styles.radioInner} /> : null}
+            <View style={[styles.paymentRadio, paymentMethod === 'whatsapp' && styles.paymentRadioActive]}>
+              {paymentMethod === 'whatsapp' ? <View style={styles.radioInner} /> : null}
             </View>
           </Pressable>
 
-          <View style={styles.form}>
-            <CheckoutInput
-              label="NUMERO DE TARJETA"
-              placeholder="0000 0000 0000 0000"
-              keyboardType="number-pad"
-              styles={styles}
-              colors={colors}
-            />
-            <CheckoutInput label="NOMBRE EN LA TARJETA" placeholder="JULIAN VANE" styles={styles} colors={colors} />
-            <View style={styles.inputGrid}>
-              <CheckoutInput label="EXPIRA" placeholder="MM / YY" styles={styles} colors={colors} />
+          <View style={styles.cardPaymentBody}>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.cardPaymentHeader}
+              onPress={() => onSelectPayment('card')}
+            >
+              <View style={styles.cardIcon}>
+                <Ionicons name="card" size={20} color={colors.background} />
+              </View>
+              <Text style={styles.paymentTitle}>Tarjeta de credito o debito</Text>
+              <View style={[styles.paymentRadio, paymentMethod === 'card' && styles.paymentRadioActive]}>
+                {paymentMethod === 'card' ? <View style={styles.radioInner} /> : null}
+              </View>
+            </Pressable>
+
+            <View style={styles.form}>
               <CheckoutInput
-                label="CVV"
-                placeholder="000"
+                label="NUMERO DE TARJETA"
+                placeholder="0000 0000 0000 0000"
                 keyboardType="number-pad"
-                secureTextEntry
                 styles={styles}
                 colors={colors}
               />
-            </View>
-            <Pressable
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: savePayment }}
-              style={({ pressed }) => [styles.checkboxRow, pressed && styles.pressedSoft]}
-              onPress={onToggleSave}
-            >
-              <View style={[styles.checkbox, savePayment && styles.checkboxActive]}>
-                {savePayment ? <Ionicons name="checkmark" size={14} color={colors.background} /> : null}
+              <CheckoutInput label="NOMBRE EN LA TARJETA" placeholder="JULIAN VANE" styles={styles} colors={colors} />
+              <View style={styles.inputGrid}>
+                <CheckoutInput label="EXPIRA" placeholder="MM / YY" styles={styles} colors={colors} />
+                <CheckoutInput
+                  label="CVV"
+                  placeholder="000"
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  styles={styles}
+                  colors={colors}
+                />
               </View>
-              <Text style={styles.checkboxLabel}>Guardar datos para futuras compras</Text>
-            </Pressable>
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: savePayment }}
+                style={({ pressed }) => [styles.checkboxRow, pressed && styles.pressedSoft]}
+                onPress={onToggleSave}
+              >
+                <View style={[styles.checkbox, savePayment && styles.checkboxActive]}>
+                  {savePayment ? <Ionicons name="checkmark" size={14} color={colors.background} /> : null}
+                </View>
+                <Text style={styles.checkboxLabel}>Guardar datos para futuras compras</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -976,7 +981,7 @@ function CheckoutBottomBar({
           <Text style={styles.totalLabel}>{step === 'payment' ? 'TOTAL A PAGAR' : 'TOTAL'}</Text>
           <Text style={styles.totalValue}>{formatPrice(total)}</Text>
         </View>
-        <PressScale>
+        <PressScale style={{ alignItems: 'flex-end', flex: 1 }}>
           <Pressable
             accessibilityRole="button"
             disabled={isProcessing || disabled}
@@ -1825,9 +1830,9 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       left: 0,
       right: 0,
       bottom: 0,
-      paddingHorizontal: Spacing.three,
+      paddingHorizontal: Spacing.four,
       paddingTop: Spacing.three,
-      paddingBottom: Platform.OS === 'ios' ? Spacing.five : Spacing.three,
+      paddingBottom: Spacing.five,
       backgroundColor: colors.background,
       borderTopWidth: 1,
       borderTopColor: colors.border,
@@ -1886,7 +1891,6 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
     },
     continueButton: {
       flex: 1,
-      minHeight: 56,
       borderRadius: Radius.md,
       backgroundColor: colors.accent,
       flexDirection: 'row',
@@ -1898,6 +1902,7 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 6 },
       elevation: 4,
+      paddingHorizontal: 8,
     },
     continueButtonDisabled: {
       opacity: 0.7,
@@ -1907,6 +1912,7 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
       fontSize: FontSize.sm,
       color: colors.background,
       letterSpacing: 1,
+      paddingHorizontal: 8,
     },
     confirmationContent: {
       paddingHorizontal: Spacing.three,

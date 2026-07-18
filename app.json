@@ -15,7 +15,8 @@
         "backgroundColor": "#EC7C43",
         "foregroundImage": "./assets/images/logo-mila.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.milaraffoapp"
     },
     "web": {
       "output": "static",
