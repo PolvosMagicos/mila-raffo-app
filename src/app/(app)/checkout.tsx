@@ -216,7 +216,7 @@ export default function CheckoutScreen() {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior='padding'
         style={styles.keyboardView}
       >
         <View style={styles.appBar}>
