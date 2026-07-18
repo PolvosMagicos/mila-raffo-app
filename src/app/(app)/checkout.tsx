@@ -23,6 +23,7 @@ import { useAuthStore } from '@/modules/auth';
 import { useCartStore, type CartApiItem } from '@/modules/cart';
 import { useOrdersStore, type Order, type OrderAddress } from '@/modules/orders';
 import { createPayment } from '@/modules/payments';
+import { formatCardCvv, formatCardExpiration, formatCardNumber } from '@/modules/payments/card-input';
 
 type CheckoutStep = 'shipping' | 'payment' | 'review' | 'confirmation';
 type ShippingMethod = 'standard' | 'express';
@@ -240,6 +241,7 @@ export default function CheckoutScreen() {
             step === 'confirmation' ? styles.confirmationScrollContent : null,
           ]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           showsVerticalScrollIndicator={false}
         >
           {step === 'confirmation' ? (
@@ -580,12 +582,13 @@ function PaymentStep({
   styles: ReturnType<typeof createStyles>;
   colors: typeof Colors.light | typeof Colors.dark;
 }) {
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiration, setCardExpiration] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+
   return (
     <View style={styles.section}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior='padding'
-      >
+      <View>
         <Text style={styles.fieldLabel}>METODO DE PAGO</Text>
         <View style={styles.paymentCard}>
           <Pressable
@@ -627,17 +630,32 @@ function PaymentStep({
                 label="NUMERO DE TARJETA"
                 placeholder="0000 0000 0000 0000"
                 keyboardType="number-pad"
+                value={cardNumber}
+                onChangeText={(value) => setCardNumber(formatCardNumber(value))}
+                maxLength={19}
                 styles={styles}
                 colors={colors}
               />
               <CheckoutInput label="NOMBRE EN LA TARJETA" placeholder="JULIAN VANE" styles={styles} colors={colors} />
               <View style={styles.inputGrid}>
-                <CheckoutInput label="EXPIRA" placeholder="MM / YY" styles={styles} colors={colors} />
+                <CheckoutInput
+                  label="EXPIRA"
+                  placeholder="MM / YY"
+                  keyboardType="number-pad"
+                  value={cardExpiration}
+                  onChangeText={(value) => setCardExpiration(formatCardExpiration(value))}
+                  maxLength={7}
+                  styles={styles}
+                  colors={colors}
+                />
                 <CheckoutInput
                   label="CVV"
                   placeholder="000"
                   keyboardType="number-pad"
                   secureTextEntry
+                  value={cardCvv}
+                  onChangeText={(value) => setCardCvv(formatCardCvv(value))}
+                  maxLength={3}
                   styles={styles}
                   colors={colors}
                 />
@@ -656,7 +674,7 @@ function PaymentStep({
             </View>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 }
@@ -1095,6 +1113,9 @@ function CheckoutInput({
   placeholder,
   keyboardType = 'default',
   secureTextEntry = false,
+  value,
+  onChangeText,
+  maxLength,
   styles,
   colors,
 }: {
@@ -1102,6 +1123,9 @@ function CheckoutInput({
   placeholder: string;
   keyboardType?: 'default' | 'phone-pad' | 'number-pad';
   secureTextEntry?: boolean;
+  value?: string;
+  onChangeText?: (value: string) => void;
+  maxLength?: number;
   styles: ReturnType<typeof createStyles>;
   colors: typeof Colors.light | typeof Colors.dark;
 }) {
@@ -1113,6 +1137,9 @@ function CheckoutInput({
         placeholder={placeholder}
         placeholderTextColor={colors.muted}
         keyboardType={keyboardType}
+        value={value}
+        onChangeText={onChangeText}
+        maxLength={maxLength}
         selectionColor={colors.accent}
         secureTextEntry={secureTextEntry}
       />
@@ -1365,7 +1392,7 @@ function createStyles(colors: typeof Colors.light | typeof Colors.dark) {
     compactSummaryBody: {
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      paddingTop: Spacing.three,
+      paddingVertical: Spacing.three,
     },
     miniTotals: {
       marginHorizontal: Spacing.three,
