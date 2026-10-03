@@ -27,7 +27,6 @@ export default function AddressesScreen() {
   const isFetching = useAddressesStore((s) => s.isFetching);
   const fetchAddresses = useAddressesStore((s) => s.fetchAddresses);
   const removeAddress = useAddressesStore((s) => s.removeAddress);
-  const setDefault = useAddressesStore((s) => s.setDefault);
 
   useEffect(() => {
     void fetchAddresses();
@@ -51,24 +50,15 @@ export default function AddressesScreen() {
     [removeAddress],
   );
 
-  const handleSetDefault = useCallback(
-    (address: Address) => {
-      void setDefault(address.id);
-    },
-    [setDefault],
-  );
-
   const renderAddress = useCallback(
     ({ item }: { item: Address }) => (
       <AddressCard
         address={item}
         onDelete={handleDelete}
-        onSetDefault={handleSetDefault}
         styles={styles}
-        colors={colors}
       />
     ),
-    [handleDelete, handleSetDefault, styles, colors],
+    [handleDelete, styles],
   );
 
   return (
@@ -135,15 +125,11 @@ export default function AddressesScreen() {
 function AddressCard({
   address,
   onDelete,
-  onSetDefault,
   styles,
-  colors,
 }: {
   address: Address;
   onDelete: (address: Address) => void;
-  onSetDefault: (address: Address) => void;
   styles: ReturnType<typeof createStyles>;
-  colors: typeof Colors.light | typeof Colors.dark;
 }) {
   const lines = [
     address.streetAddress,
@@ -177,17 +163,6 @@ function AddressCard({
       </View>
 
       <View style={styles.addressActions}>
-        {!address.isDefault ? (
-          <Pressable
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.actionButton, pressed && styles.pressed]}
-            onPress={() => onSetDefault(address)}
-          >
-            <Ionicons name="checkmark-circle-outline" size={16} color={colors.accent} />
-            <Text style={[styles.actionButtonText, { color: colors.accent }]}>Predeterminada</Text>
-          </Pressable>
-        ) : null}
-
         <Pressable
           accessibilityRole="button"
           style={({ pressed }) => [styles.actionButton, pressed && styles.pressed]}
