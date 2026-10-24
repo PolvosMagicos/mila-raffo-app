@@ -1,6 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import * as Notifications from 'expo-notifications';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
@@ -9,9 +8,10 @@ import { DeviceEventEmitter, useColorScheme } from 'react-native';
 import { APP_FONTS } from '@/constants/fonts';
 import { AUTH_SESSION_EXPIRED_EVENT } from '@/core/network/api-client';
 import { useAuthStore } from '@/modules/auth';
+import { Notifications } from '@/modules/notifications/native-notifications';
 import { useOnboardingStore } from '@/modules/onboarding';
 
-Notifications.setNotificationHandler({
+Notifications?.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
@@ -52,6 +52,8 @@ export default function RootLayout() {
   }, [logout]);
 
   useEffect(() => {
+    if (!Notifications) return;
+
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as Record<string, unknown>;
       if (data.type === 'order_status' && typeof data.orderId === 'string') {

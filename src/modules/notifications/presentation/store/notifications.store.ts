@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { notificationsModule } from '../../di';
+import { Notifications } from '../../native-notifications';
 import type { NotificationPreferences } from '../../domain/entities/notification-preferences.entity';
 import { extractErrorMessage } from '@/core/network/extract-error';
 
@@ -35,7 +35,7 @@ export const useNotificationsStore = create<NotificationsState & NotificationsAc
 
   registerPushToken: async () => {
     try {
-      if (!Device.isDevice && !__DEV__) return;
+      if (!Notifications || (!Device.isDevice && !__DEV__)) return;
 
       let { granted } = await Notifications.getPermissionsAsync();
 
